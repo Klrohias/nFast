@@ -1,18 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class EntryUIController : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public Button EnterButton;
+
     void Start()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        NavigationService.Get().JumpScene("Scenes/EntryScene");
+        EnterButton.onClick.AddListener(() =>
+        {
+            NavigationService.Get().JumpScene("Scenes/MainMenuScene");
+        });
     }
 }

@@ -11,7 +11,6 @@ public class ServicesInjector : MonoBehaviour
     private Type[] serviceTypes = new Type[]
     {
         typeof(NavigationService),
-        typeof(AnimationService)
     };
     public Transform ServicesRoot;
     private void injectServices()
@@ -26,17 +25,5 @@ public class ServicesInjector : MonoBehaviour
     void Awake()
     {
         injectServices();
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }

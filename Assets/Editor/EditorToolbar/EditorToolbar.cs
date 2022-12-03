@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Experimental;
+using UnityEditor.SceneManagement;
+using UnityEditor.SearchService;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 [InitializeOnLoad]
@@ -16,10 +19,23 @@ public static class EditorToolbar
     private static ScriptableObject lastToolbar = null;
     static EditorToolbar()
     {
+        EditorApplication.playModeStateChanged += playModeStateChanged;
         EditorApplication.update += OnUpdate;
-         
         toolbarType = typeof(Editor).Assembly.GetType("UnityEditor.Toolbar");
     }
+    private static void playModeStateChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.ExitingEditMode)
+        {
+            EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+        }
+
+        if (state == PlayModeStateChange.EnteredPlayMode)
+        {
+            EditorSceneManager.LoadScene(0);
+        }
+    }
+
 
     private static void OnUpdate()
     {
@@ -71,16 +87,6 @@ public static class EditorToolbar
             view.orthographic = true;
             Selection.activeGameObject = GameObject.Find("Cavan♂s");
             SceneView.FrameLastActiveSceneView();
-        }
-
-        GUILayout.TextArea("夹带私货：");
-        if (GUILayout.Button("嘿嘿...狗带..."))
-        {
-            Debug.Log("狗带tql！");
-        }
-        if (GUILayout.Button("关注inokana喵"))
-        {
-            Application.OpenURL("https://space.bilibili.com/506856077");
         }
         GUILayout.EndHorizontal();
     }
