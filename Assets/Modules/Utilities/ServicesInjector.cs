@@ -2,28 +2,37 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Klrohias.NFast.GamePlay;
+using Klrohias.NFast.Navigation;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UObject = UnityEngine.Object;
 
-public class ServicesInjector : MonoBehaviour
+namespace Klrohias.NFast.Utilities
 {
-    private Type[] serviceTypes = new Type[]
+    public class ServicesInjector : MonoBehaviour
     {
-        typeof(NavigationService),
-    };
-    public Transform ServicesRoot;
-    private void injectServices()
-    {
-        var rootGameObject = ServicesRoot.gameObject;
-        UObject.DontDestroyOnLoad(rootGameObject);
-        foreach (var serviceType in serviceTypes)
+        private Type[] serviceTypes = new Type[]
         {
-            rootGameObject.AddComponent(serviceType);
+            // add services here...
+            typeof(NavigationService),
+            typeof(TouchService)
+        };
+
+        public Transform ServicesRoot;
+
+        private void injectServices()
+        {
+            var rootGameObject = ServicesRoot.gameObject;
+            UObject.DontDestroyOnLoad(rootGameObject);
+            foreach (var serviceType in serviceTypes)
+            {
+                rootGameObject.AddComponent(serviceType);
+            }
         }
-    }
-    void Awake()
-    {
-        injectServices();
+
+        void Awake()
+        {
+            injectServices();
+        }
     }
 }

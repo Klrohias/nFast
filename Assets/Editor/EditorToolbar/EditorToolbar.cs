@@ -32,7 +32,10 @@ public static class EditorToolbar
 
         if (state == PlayModeStateChange.EnteredPlayMode)
         {
-            EditorSceneManager.LoadScene(0);
+            // EditorSceneManager.LoadSceneInPlayMode("Scenes/EntryScene",
+            //     new LoadSceneParameters(LoadSceneMode.Single));
+            if (EditorSceneManager.GetActiveScene().buildIndex != 0) EditorSceneManager.LoadScene(0);
+            Debug.ClearDeveloperConsole();
         }
     }
 
@@ -85,7 +88,7 @@ public static class EditorToolbar
             var view = SceneView.sceneViews[0] as SceneView;
             view.in2DMode = true;
             view.orthographic = true;
-            Selection.activeGameObject = GameObject.Find("Cavan♂s");
+            Selection.activeGameObject = GameObject.Find("Canvas");
             SceneView.FrameLastActiveSceneView();
         }
         GUILayout.EndHorizontal();

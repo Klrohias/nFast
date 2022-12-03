@@ -1,18 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
+using Klrohias.NFast.Navigation;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class EntryUIController : MonoBehaviour
+namespace Klrohias.NFast.UIControllers
 {
-    public Button EnterButton;
-
-    void Start()
+    public class EntryUIController : MonoBehaviour
     {
-        NavigationService.Get().JumpScene("Scenes/EntryScene");
-        EnterButton.onClick.AddListener(() =>
+        public Button EnterButton;
+
+        void Start()
         {
-            NavigationService.Get().JumpScene("Scenes/MainMenuScene");
-        });
+            NavigationService.Get().JumpScene("Scenes/EntryScene");
+            EnterButton.onClick.AddListener(() => { NavigationService.Get().JumpScene("Scenes/MainMenuScene"); });
+        }
     }
 }

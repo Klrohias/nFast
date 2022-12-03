@@ -2,14 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class Service<T> : MonoBehaviour
-    where T : MonoBehaviour
+namespace Klrohias.NFast.Utilities
 {
-    public static T Get() => service;
-    private static T service = null;
-
-    public Service()
+    public abstract class Service<T> : MonoBehaviour
+        where T : MonoBehaviour
     {
-        service = this as T;
+        public static T Get() => service;
+        private static T service = null;
+
+        public Service()
+        {
+            service = this as T;
+        }
     }
 }
