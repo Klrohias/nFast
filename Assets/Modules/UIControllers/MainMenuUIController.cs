@@ -14,7 +14,7 @@ namespace Klrohias.NFast.UIControllers
         {
             TestButton.onClick.AddListener(() =>
             {
-                NavigationService.Get().ExtraData = "H:/testchart.pez";
+                NavigationService.Get().ExtraData = "H:/testchart1.pez";
                 NavigationService.Get().LoadScene("Scenes/PlayScene");
             });
         }

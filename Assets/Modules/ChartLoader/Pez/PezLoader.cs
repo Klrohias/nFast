@@ -39,5 +39,16 @@ namespace Klrohias.NFast.ChartLoader.Pez
 
             return chart;
         }
+
+        public static byte[] ExtractFile(PezRoot root, string name)
+        {
+            if (!root.files.ContainsKey(name)) throw new ArgumentException("file not exists");
+            var file = root.files[name];
+            var result = new byte[file.Length];
+            var stream = file.Open();
+            stream.Read(result, 0, result.Length);
+            stream.Close();
+            return result;
+        }
     }
 }
