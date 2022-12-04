@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Mime;
 using System.Threading.Tasks;
@@ -11,7 +12,11 @@ using Klrohias.NFast.Utilities;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Drawing;
+using Klrohias.NFast.GamePlay;
+using Klrohias.NFast.Native;
 using SixLabors.ImageSharp.Formats.Bmp;
+using UnityEngine.Networking;
+using Debug = UnityEngine.Debug;
 using Image = SixLabors.ImageSharp.Image;
 
 public class GamePlayer : MonoBehaviour
@@ -20,22 +25,33 @@ public class GamePlayer : MonoBehaviour
     public Transform BackgroundTransform;
     public SpriteRenderer[] BackgroundImages;
     private float scaleFactor = 1f;
-    public RawImage BgImage;
+    private Queue<Action> runOnMainThreadQueue = new();
+    private ObjectPool linePool;
+    private ObjectPool notePool;
+    private ObjectPool holdNotePool;
+    public GameObject JudgeLinePrefab;
     async void Start()
     {
         // load chart file
         var loadInstruction = NavigationService.Get().ExtraData as string;
         if (loadInstruction == null) throw new InvalidOperationException("failed to load: unknown");
 
+        mainTouchService = TouchService.Get();
+
         SetupScreenScale();
         BackgroundTransform.localScale = ScaleVector3(BackgroundTransform.localScale);
 
         await LoadChart(loadInstruction);
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        block.SetTexture("_MainTex", coverTexture);
+        foreach (var backgroundImage in BackgroundImages)
+        {
+            backgroundImage.SetPropertyBlock(block);
+        }
         GameBegin();
     }
 
     Vector2 ScaleVector2(Vector2 inputVector2) => inputVector2 * scaleFactor;
-
     Vector3 ScaleVector3(Vector3 inputVector3) =>
         new(inputVector3.x * scaleFactor, inputVector3.y * scaleFactor, inputVector3.z);
     void SetupScreenScale()
@@ -47,51 +63,133 @@ public class GamePlayer : MonoBehaviour
             scaleFactor = aspectRatio / ASPECT_RATIO;
         }
     }
+
+    private Texture2D coverTexture = null;
+    private AudioClip audioClip = null;
     async Task LoadChart(string filePath)
     {
         // TODO: support pez only now
         PezRoot pezChart = null;
         Chart chart = null;
         
+        Stopwatch stopwatch = Stopwatch.StartNew();
         await Async.RunOnThread(() =>
         {
             pezChart = PezLoader.LoadPezChart(filePath);
         });
+        Debug.Log($"load pez chart: {stopwatch.ElapsedMilliseconds} ms");
         
-        byte[] coverData = null;
-        var (coverWidth, coverHeight) = (0, 0);
+        stopwatch.Restart();
+        var coverPath = Path.Combine(OSService.Get().CachePath, pezChart.Metadata.Background);
+        var musicPath = Path.Combine(OSService.Get().CachePath, pezChart.Metadata.Song);
+        bool coverExtracted = false;
+        bool audioExtracted = false;
         await Task.WhenAll(Async.RunOnThread(() =>
             {
                 chart = pezChart.ToChart();
             }),
             Async.RunOnThread(() =>
             {
-                var imageBytes = PezLoader.ExtractFile(pezChart, pezChart.Metadata.Background);
-                var image = Image.Load(imageBytes);
-                var coverMemoryStream = new MemoryStream();
-                image.Save(coverMemoryStream, new BmpEncoder {});
-                // from https://forum.unity.com/threads/texture2d-loadimage-too-slow-anyway-to-use-threading-to-speed-it-up.442622/
-                byte[] bytBMP = coverMemoryStream.ToArray();
-                int intPointer = 51;
-                MemoryStream msTx = new MemoryStream(bytBMP, 51, image.Width * image.Height * 3);
-                (coverWidth, coverHeight) = (image.Width, image.Height);
-                coverData = msTx.ToArray();
-            }));
+                var coverStream = File.OpenWrite(coverPath);
+                PezLoader.ExtractFile(pezChart, pezChart.Metadata.Background, coverStream);
+                coverStream.Flush();
+                coverStream.Close();
+                coverExtracted = true;
+            }),
+            Async.RunOnThread(() =>
+            {
+                var musicStream = File.OpenWrite(musicPath);
+                PezLoader.ExtractFile(pezChart, pezChart.Metadata.Background, musicStream);
+                musicStream.Flush();
+                musicStream.Close();
+                audioExtracted = true;
+            }),
+            Task.Run(async () =>
+            {
+                while (!(audioExtracted && coverExtracted))
+                {
+                    await Task.Delay(80);
+                }
+                pezChart.DropZipData();
+            })
+        );
 
-        Texture2D cover = new Texture2D(coverWidth, coverHeight, TextureFormat.RGB24, false);
-        cover.LoadRawTextureData(coverData);
-        cover.Apply();
+        await Task.WhenAll(Async.CallbackToTask((resolve) =>
+        {
+            IEnumerator CO_LoadMusic()
+            {
+                using var request =
+                    UnityWebRequestMultimedia.GetAudioClip($"file://{musicPath}", AudioType.MPEG);
+                yield return request.SendWebRequest();
+                if (!string.IsNullOrEmpty(request.error))
+                {
+                    Debug.LogWarning($"music load failed: {request.error}");
+                    resolve();
+                    yield break;
+                }
 
-        BgImage.texture = cover;
+                audioClip = DownloadHandlerAudioClip.GetContent(request);
+                resolve();
+            }
+
+            StartCoroutine(CO_LoadMusic());
+        }), Async.CallbackToTask((resolve) =>
+        {
+            IEnumerator CO_LoadCover()
+            {
+                using var request =
+                    UnityWebRequestTexture.GetTexture($"file://{coverPath}");
+                yield return request.SendWebRequest();
+                if (!string.IsNullOrEmpty(request.error))
+                {
+                    Debug.LogWarning($"cover load failed: {request.error}");
+                    resolve();
+                    yield break;
+                }
+
+                coverTexture = DownloadHandlerTexture.GetContent(request);
+                resolve();
+            }
+
+            StartCoroutine(CO_LoadCover());
+        }));
+
+        Debug.Log($"convert pez to nfast chart + extract files + load cover and audio files: {stopwatch.ElapsedMilliseconds} ms");
     }
 
+    private TouchService mainTouchService;
     void GameBegin()
     {
+        Debug.Log("game begin");
+        linePool = new(() =>
+        {
+            var obj = Instantiate(JudgeLinePrefab);
+            obj.name += " [Pooled]";
+            obj.transform.localScale = ScaleVector3(obj.transform.localScale);
+            return obj;
+        }, 5);
+        
+        mainTouchService.enabled = true;
+    }
 
+    private Task runOnMainThread(Func<Task> a)
+    {
+        return Async.CallbackToTask((resolve) =>
+        {
+            lock (runOnMainThreadQueue)
+            {
+                runOnMainThreadQueue.Enqueue(async () =>
+                {
+                    await a();
+                    resolve();
+                });
+            }
+        });
     }
 
     void Update()
     {
-        
+        while (runOnMainThreadQueue.Count > 0)
+            runOnMainThreadQueue.Dequeue()();
     }
 }

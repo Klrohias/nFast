@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using Klrohias.NFast.GamePlay;
+using Klrohias.NFast.Native;
 using Klrohias.NFast.Navigation;
 using UnityEngine;
 using UObject = UnityEngine.Object;
@@ -15,7 +16,8 @@ namespace Klrohias.NFast.Utilities
         {
             // add services here...
             typeof(NavigationService),
-            typeof(TouchService)
+            typeof(TouchService),
+            typeof(OSService)
         };
 
         public Transform ServicesRoot;

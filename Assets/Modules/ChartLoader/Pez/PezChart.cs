@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
 
 namespace Klrohias.NFast.ChartLoader.Pez
@@ -12,7 +12,8 @@ namespace Klrohias.NFast.ChartLoader.Pez
         [JsonProperty("META")]
         public PezMetadata Metadata { get; set; } = null;
 
-        internal Dictionary<string, ZipArchiveEntry> files = null;
+        internal ZipFile zipFile = null;
+        internal Dictionary<string, ZipEntry> files = null;
 
         [JsonProperty("judgeLineList")]
         public List<PezJudgeLineList> JudgeLineList { get; set; }
@@ -43,6 +44,15 @@ namespace Klrohias.NFast.ChartLoader.Pez
             {
                 var line = linesArray[lineId] = judgeLine.ToChartLine();
                 line.LineId = lineId;
+                if (judgeLine.EventLayers != null)
+                {
+                    var mainLayer = judgeLine.EventLayers[0];
+                    var events =
+                        new LineEvent[(mainLayer.AlphaEvents?.Count ?? 0) + (mainLayer.MoveXEvents?.Count ?? 0) +
+                                      (mainLayer.MoveYEvents?.Count ?? 0) + (mainLayer.RotateEvents?.Count ?? 0) +
+                                      (mainLayer.SpeedEvents?.Count ?? 0)];
+                }
+
                 // cast notes
                 foreach (var note in PezCastToChartNotes(judgeLine, lineId))
                 {
@@ -60,6 +70,13 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 Lines = linesArray
             };
             return chart;
+        }
+
+        public void DropZipData()
+        {
+            files = null;
+            zipFile = null;
+            GC.Collect();
         }
     }
 

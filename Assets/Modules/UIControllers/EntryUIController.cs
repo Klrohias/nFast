@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Klrohias.NFast.GamePlay;
 using Klrohias.NFast.Navigation;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,6 +15,7 @@ namespace Klrohias.NFast.UIControllers
         {
             NavigationService.Get().JumpScene("Scenes/EntryScene");
             EnterButton.onClick.AddListener(() => { NavigationService.Get().JumpScene("Scenes/MainMenuScene"); });
+            TouchService.Get().enabled = false;
         }
     }
 }

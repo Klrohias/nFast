@@ -2,9 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
+using ICSharpCode.SharpZipLib;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ICSharpCode.SharpZipLib.Zip;
 using UnityEngine;
 using Newtonsoft.Json;
 
@@ -14,18 +15,28 @@ namespace Klrohias.NFast.ChartLoader.Pez
     {
         private const string PEZ_INFO = "info.txt";
         private static Regex chartLocate = new Regex("Chart:([0-9a-zA-Z .]+)");
+
+        private static IEnumerable<ZipEntry> readZipEntries(ZipFile zipfile)
+        {
+            foreach (ZipEntry zipEntry in zipfile)
+            {
+                yield return zipEntry;
+            }
+        }
         public static PezRoot LoadPezChart(string path)
         {
             // pez is a zip file
             // firstly, open zip
-            var zFile = ZipFile.OpenRead(path);
-            var files = zFile.Entries.Take(6).ToDictionary(x => x.FullName);
+            var zipFile = new ZipFile(path);
+
+            var files = readZipEntries(zipFile).Take(6).ToDictionary(x => x.Name);
             
             // read info.txt
             if (!files.ContainsKey(PEZ_INFO))
                 throw new Exception("failed to load pez file: info.txt not exists");
 
-            var info = new StreamReader(files[PEZ_INFO].Open()).ReadToEnd();
+            using var pezInfoStream = zipFile.GetInputStream(files[PEZ_INFO]);
+            var info = new StreamReader(pezInfoStream).ReadToEnd();
             var locate = chartLocate.Matches(info);
             if (locate.Count == 0) throw new Exception("failed to load pez file: invalid info.txt");
             var chartName = locate[0].Groups[1].Value.Trim();
@@ -34,7 +45,10 @@ namespace Klrohias.NFast.ChartLoader.Pez
             if (!files.ContainsKey(chartName))
                 throw new Exception("failed to load pez file: chart not found");
 
-            var chart = JsonConvert.DeserializeObject<PezRoot>(new StreamReader(files[chartName].Open()).ReadToEnd());
+            using var pezChartStream = zipFile.GetInputStream(files[chartName]);
+            var chart = JsonConvert.DeserializeObject<PezRoot>(new StreamReader(pezChartStream).ReadToEnd());
+
+            chart.zipFile = zipFile;
             chart.files = files;
 
             return chart;
@@ -44,11 +58,19 @@ namespace Klrohias.NFast.ChartLoader.Pez
         {
             if (!root.files.ContainsKey(name)) throw new ArgumentException("file not exists");
             var file = root.files[name];
-            var result = new byte[file.Length];
-            var stream = file.Open();
-            stream.Read(result, 0, result.Length);
+            var result = new MemoryStream(Convert.ToInt32(file.Size));
+            ExtractFile(root, name, result);
+            return result.ToArray();
+        }
+
+        public static void ExtractFile(PezRoot root, string name, Stream outStream)
+        {
+            if (!root.files.ContainsKey(name)) throw new ArgumentException("file not exists");
+            var file = root.files[name];
+
+            using var stream = root.zipFile.GetInputStream(file);
+            stream.CopyTo(outStream);
             stream.Close();
-            return result;
         }
     }
 }

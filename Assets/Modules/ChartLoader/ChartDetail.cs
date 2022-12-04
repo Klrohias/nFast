@@ -30,6 +30,25 @@ public class ChartNote
 public class ChartLine
 {
     public uint LineId { get; set; } = 0;
+    public LineEvent[] LineEvents;
+}
+
+public enum EventType
+{
+    Alpha,
+    MoveX,
+    MoveY,
+    Rotate,
+    Speed,
+}
+public class LineEvent
+{
+    public EventType Type { get; set; }
+    public float BeginValue { get; set; }
+    public ChartTimespan BeginTime { get; set; }
+    public float EndValue { get; set; }
+    public ChartTimespan EndTime { get; set; }
+    public uint EasingFunc { get; set; }
 }
 public struct ChartTimespan
 {

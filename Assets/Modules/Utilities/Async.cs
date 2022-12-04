@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Klrohias.NFast.Utilities
@@ -13,6 +14,13 @@ namespace Klrohias.NFast.Utilities
                 threadStart();
                 result.TrySetResult(true);
             }).Start();
+            return result.Task;
+        }
+
+        public static Task CallbackToTask(Action<Action> action)
+        {
+            var result = new TaskCompletionSource<bool>();
+            action(() => result.TrySetResult(true));
             return result.Task;
         }
     }
