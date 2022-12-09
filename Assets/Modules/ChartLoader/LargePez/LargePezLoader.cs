@@ -46,41 +46,28 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             
             var chartStream = File.Open(Path.Combine(cacheDir, chartName), FileMode.Open);
             var tokenizer = new JsonTokenizer(chartStream);
+            var walker = new JsonWalker(tokenizer);
 
-            if (!files.ContainsKey(LargeChartName))
+            var chart = new LargePezChart()
             {
-                var largeChartPath = Path.Combine(cacheDir, LargeChartName);
-                var fileStream = File.OpenWrite(largeChartPath);
-                var writer = new StreamWriter(fileStream);
-                try
-                {
-                    while (true)
-                    {
-                        writer.Write(tokenizer.ParseNextToken().ToString());
-                    }
-                }
-                catch(EndOfStreamException)
-                {
-                }
-                writer.Flush();
-                fileStream.Close();
-                zipFile.BeginUpdate();
-                zipFile.Add(new StaticDiskDataSource(largeChartPath), LargeChartName);
-                zipFile.CommitUpdate();
-                tokenizer.Goto(0);
-            }
+                zipFile = zipFile,
+                tokenizer = tokenizer,
+                walker = walker
+            };
 
-
-            var parser = new JsonWalker(tokenizer);
-            parser.EnterBlock();
+            walker.EnterBlock();
             var s1 = Stopwatch.StartNew();
 
-            foreach (var keyValuePair in parser.ReadProperties())
+            foreach (var keyValuePair in walker.ReadProperties())
             {
                 switch (keyValuePair.Key.Value)
                 {
-                    case "BPMList":
+                    case "META":
                     {
+                        walker.EnterBlock();
+                        var obj = new PezMetadata();
+                        walker.ExtractObject(typeof(PezMetadata), obj);
+                        walker.LeaveBlock();
                         break;
                     }
                 }
@@ -91,5 +78,41 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             Debug.Log("time: " + s1.ElapsedMilliseconds + "ms");
             return null;
         }
+
+        public static PezNote ExtractNote(LargePezChart chart, long offset)
+        {
+            var tokenizer = chart.tokenizer;
+            var walker = chart.walker;
+            tokenizer.Goto(offset);
+
+            walker.EnterBlock();
+
+            walker.LeaveBlock();
+            throw new NotImplementedException();
+        }
+        /*
+         *  if (!files.ContainsKey(LargeChartName))
+         *  {
+         *      var largeChartPath = Path.Combine(cacheDir, LargeChartName);
+         *      var fileStream = File.OpenWrite(largeChartPath);
+         *      var writer = new StreamWriter(fileStream);
+         *      try
+         *      {
+         *          while (true)
+         *          {
+         *              writer.Write(tokenizer.ParseNextToken().ToString());
+         *          }
+         *      }
+         *      catch(EndOfStreamException)
+         *      {
+         *      }
+         *      writer.Flush();
+         *      fileStream.Close();
+         *      zipFile.BeginUpdate();
+         *      zipFile.Add(new StaticDiskDataSource(largeChartPath), LargeChartName);
+         *      zipFile.CommitUpdate();
+         *      tokenizer.Goto(0);
+         *  }
+         */
     }
 }

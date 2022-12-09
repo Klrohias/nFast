@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using Newtonsoft.Json;
 
 namespace Klrohias.NFast.ChartLoader.LargePez
 {
@@ -62,9 +65,6 @@ namespace Klrohias.NFast.ChartLoader.LargePez
                 token = NextToken();
                 if (token.Type != JsonTokenType.Colon)
                 {
-                    if (token.Type != JsonTokenType.Comma && token.Type != JsonTokenType.RightBracket)
-                        throw new Exception($"Unexpected '{token.Type}'");
-                    NextToken();
                     continue;
                 }
 
@@ -90,9 +90,7 @@ namespace Klrohias.NFast.ChartLoader.LargePez
                 token = NextToken();
                 if (token.Type != JsonTokenType.Colon)
                 {
-                    if (token.Type != JsonTokenType.Comma && token.Type != JsonTokenType.RightBracket)
-                        throw new Exception($"Unexpected '{token.Type}'");
-                    NextToken();
+                    continue;
                 }
 
                 var value = NextToken();
@@ -101,6 +99,53 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             }
         }
 
+        public IEnumerable<JsonToken> ReadElements()
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// extract to properties of object
+        /// </summary>
+        public void ExtractObject(Type type, object target)
+        {
+            var properties = type.GetProperties()
+                .Where(x => x.GetCustomAttribute<JsonPropertyAttribute>() != null);
+            foreach (var (key, value) in ReadProperties())
+            {
+                var property = properties.FirstOrDefault(x =>
+                    x.GetCustomAttribute<JsonPropertyAttribute>().PropertyName == key.Value);
+
+                if (value.Type == JsonTokenType.String)
+                {
+                    property.SetValue(target, value.Value);
+                }
+                else if (value.Type == JsonTokenType.Number)
+                {
+                    SetNumberProperty(property, value, target);
+                }
+                else if (value.Type == JsonTokenType.LeftBrace)
+                {
+                    var obj = Activator.CreateInstance(property.PropertyType);
+                    property.SetValue(target, obj);
+                    ExtractObject(property.PropertyType, obj);
+                } else if (value.Type == JsonTokenType.LeftBracket)
+                {
+                    throw new NotImplementedException("array is not supported now");
+                }
+            }
+        }
+
+        private void SetNumberProperty(PropertyInfo property, JsonToken token, object target)
+        {
+            var type = property.PropertyType;
+            var value = token.Value;
+
+            var method = type.GetMethod("Parse", new[] {typeof(string)});
+            if (method == null) throw new Exception($"failed to cast {token} to type {type}");
+
+            property.SetValue(target, method.Invoke(null, new object[] {value}));
+        }
         public void SkipBlock()
         {
             var token = currentToken;

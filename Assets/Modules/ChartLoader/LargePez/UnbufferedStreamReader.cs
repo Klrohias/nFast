@@ -10,12 +10,18 @@ namespace Klrohias.NFast.ChartLoader.LargePez
         private Stream stream;
         // 没有缓存是不可能的，这辈子都不可能的
         private byte[] buffer;
-        private long bufferSize = 4096;
+        private long bufferSize = 8192;
         private long basePosition = 0;
         private long bufferPosition = 0;
         public UnbufferedStreamReader(Stream stream)
         {
             this.stream = stream;
+            MakeBuffer();
+        }
+        public UnbufferedStreamReader(Stream stream, int bufferSize)
+        {
+            this.stream = stream;
+            this.bufferSize = bufferSize;
             MakeBuffer();
         }
 

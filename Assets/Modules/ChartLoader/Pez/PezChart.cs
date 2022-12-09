@@ -23,17 +23,11 @@ namespace Klrohias.NFast.ChartLoader.Pez
             if(judgeLine.Notes == null) yield break;
             foreach (var note in judgeLine.Notes)
             {
-                yield return new()
-                {
-                    LineId = lineId,
-                    EndTime = new ChartTimespan(note.EndTime),
-                    StartTime = new ChartTimespan(note.StartTime),
-                    XPosition = note.PositionX
-                };
+                yield return note.ToNFastNote(lineId);
             }
         }
 
-        public Chart ToChart()
+        public NFastChart ToChart()
         {
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
             var notesArray = new ChartNote[countOfNotes];
@@ -96,7 +90,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 lineId++;
             }
 
-            var chart = new Chart()
+            var chart = new NFastChart()
             {
                 Metadata = Metadata.ToChartMetadata(),
                 Notes = notesArray,
@@ -359,6 +353,17 @@ namespace Klrohias.NFast.ChartLoader.Pez
 
         [JsonProperty("yOffset")]
         public double YOffset { get; set; }
+
+        public ChartNote ToNFastNote(uint lineId = 0)
+        {
+            return new()
+            {
+                LineId = lineId,
+                EndTime = new ChartTimespan(EndTime),
+                StartTime = new ChartTimespan(StartTime),
+                XPosition = PositionX
+            };
+        }
     }
 
     public class PezRotateEvent

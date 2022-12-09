@@ -30,10 +30,8 @@ namespace Klrohias.NFast.ChartLoader.LargePez
         public void Goto(long pos)
         {
             reader.Position = pos;
-            // reader.DiscardBufferedData();
         }
         private long position => reader.Position;
-        // private (bool has, char ch) hasPeekChar = (false, '\0');
         internal char NextChar()
         {
             if (reader.EndOfStream) throw new EndOfStreamException();
@@ -44,16 +42,12 @@ namespace Klrohias.NFast.ChartLoader.LargePez
         {
             return (char)reader.Peek();
         }
+
         public JsonToken ParseNextToken()
         {
             SkipWhitespace();
             var pos = position;
-            char c;
-            c = NextChar();
-            if (position > 2160700)
-            {
-                System.Diagnostics.Debug.Print("1");
-            }
+            var c = NextChar();
             switch (c)
             {
                 case '"':

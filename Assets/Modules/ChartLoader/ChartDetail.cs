@@ -4,29 +4,32 @@ using System.Collections.Generic;
 using Klrohias.NFast.ChartLoader;
 using UnityEngine;
 
-public class Chart : IChart
+public class NFastChart : IChart
 {
     public ChartMetadata Metadata { get; set; }
     public ChartNote[] Notes { get; set; }
     public ChartLine[] Lines { get; set; }
     public IEnumerator<IList<ChartNote>> GetNotes()
     {
-        ChartNote[] notes = new ChartNote[Notes.Length];
+        var notes = new ChartNote[Notes.Length];
         Array.Copy(Notes, notes, Notes.Length);
         int reduceIndex = 0;
-        int s2Index = 0;
+        int beats = 0;
+        
         while (reduceIndex < notes.Length)
         {
-            List<ChartNote> resultNotes = new List<ChartNote>(Math.Max(8, (notes.Length - reduceIndex) / 4));
+            var resultNotes = new List<ChartNote>(Math.Max(8, (notes.Length - reduceIndex) / 4));
             for (int i = reduceIndex; i < notes.Length; i++)
             {
                 var note = notes[i];
-                if (note.StartTime.S2 <= s2Index && note.EndTime.S2 <= s2Index)
+                var startTime = Convert.ToInt32(MathF.Floor(note.StartTime.Beats));
+                var endTime = Convert.ToInt32(MathF.Ceiling(note.EndTime.Beats));
+                if (startTime <= beats && endTime >= beats)
                 {
                     resultNotes.Add(note);
                 }
 
-                if (note.EndTime.S2 == s2Index)
+                if (endTime == beats)
                 {
                     notes[i] = notes[reduceIndex];
                     notes[reduceIndex] = null;
@@ -34,14 +37,14 @@ public class Chart : IChart
                 }
             }
 
-            s2Index++;
+            beats++;
             yield return resultNotes;
         }
     }
 
-    public IEnumerator<IList<LineEvent>> GetEvents()
+    public IEnumerator<IList<ChartLine>> GetLines()
     {
-        throw new NotImplementedException();
+        yield return Lines;
     }
 }
 
@@ -91,26 +94,38 @@ public class LineEvent
     public ChartTimespan EndTime { get; set; }
     public uint EasingFunc { get; set; }
 }
+
 public struct ChartTimespan
 {
-    public int S1;
-    public int S2;
-    public int S3;
-    public static ChartTimespan Zero { get; } = new ChartTimespan {S1 = 0, S2 = 0, S3 = 0};
+    public float Beats;
+    public static ChartTimespan Zero { get; } = new ChartTimespan {Beats = 0};
 
-
+    private void FromBeatsFraction(int s1, int s2, int s3)
+    {
+        var S1 = s1;
+        var S2 = s2;
+        var S3 = s3;
+        if (S2 > S3)
+        {
+            S1 += S2 / S3;
+            S2 %= S3;
+        }
+        Beats = S1 + (float) S2 / S3;
+    }
     public ChartTimespan(IList<int> items)
     {
-        S1 = items[0];
-        S2 = items[1];
-        S3 = items[2];
+        Beats = 0f;
+        FromBeatsFraction(items[0], items[1], items[2]);
     }
 
     public ChartTimespan(int s1, int s2, int s3)
     {
-        S1 = s1;
-        S2 = s2;
-        S3 = s3;
+        Beats = 0f;
+        FromBeatsFraction(s1, s2, s3);
     }
 
+    public ChartTimespan(float beats)
+    {
+        Beats = beats;
+    }
 }

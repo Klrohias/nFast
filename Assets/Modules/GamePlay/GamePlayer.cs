@@ -32,6 +32,7 @@ public class GamePlayer : MonoBehaviour
     private ObjectPool holdNotePool;
     public GameObject JudgeLinePrefab;
     private bool gameRunning = false;
+    private IChart chart;
 
     public class GameStartInfo
     {
@@ -87,7 +88,7 @@ public class GamePlayer : MonoBehaviour
         }
         // TODO: support pez only now
         PezRoot pezChart = null;
-        Chart chart = null;
+        NFastChart chart = null;
         
         Stopwatch stopwatch = Stopwatch.StartNew();
         await Async.RunOnThread(() =>
