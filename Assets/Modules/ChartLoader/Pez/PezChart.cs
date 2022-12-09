@@ -51,6 +51,39 @@ namespace Klrohias.NFast.ChartLoader.Pez
                         new LineEvent[(mainLayer.AlphaEvents?.Count ?? 0) + (mainLayer.MoveXEvents?.Count ?? 0) +
                                       (mainLayer.MoveYEvents?.Count ?? 0) + (mainLayer.RotateEvents?.Count ?? 0) +
                                       (mainLayer.SpeedEvents?.Count ?? 0)];
+
+                    var index = 0;
+                    if (judgeLine.EventLayers[0].MoveXEvents != null)
+                    {
+                        foreach (var pezMoveXEvent in judgeLine.EventLayers[0].MoveXEvents)
+                        {
+                            events[index] = new LineEvent
+                            {
+                                Type = EventType.MoveX,
+                                BeginTime = new ChartTimespan(pezMoveXEvent.StartTime),
+                                EndTime = new ChartTimespan(pezMoveXEvent.EndTime),
+                                BeginValue = pezMoveXEvent.Start,
+                                EndValue = pezMoveXEvent.End
+                            };
+                            index++;
+                        }
+                    }
+                    if (judgeLine.EventLayers[0].MoveYEvents != null)
+                    {
+                        foreach (var pezMoveYEvent in judgeLine.EventLayers[0].MoveYEvents)
+                        {
+                            events[index] = new LineEvent
+                            {
+                                Type = EventType.MoveY,
+                                BeginTime = new ChartTimespan(pezMoveYEvent.StartTime),
+                                EndTime = new ChartTimespan(pezMoveYEvent.EndTime),
+                                BeginValue = pezMoveYEvent.Start,
+                                EndValue = pezMoveYEvent.End
+                            };
+                            index++;
+                        }
+                    }
+                    line.LineEvents = events;
                 }
 
                 // cast notes
@@ -241,16 +274,16 @@ namespace Klrohias.NFast.ChartLoader.Pez
     public class PezMoveXEvent
     {
         [JsonProperty("easingLeft")]
-        public double EasingLeft { get; set; }
+        public float EasingLeft { get; set; }
 
         [JsonProperty("easingRight")]
-        public double EasingRight { get; set; }
+        public float EasingRight { get; set; }
 
         [JsonProperty("easingType")]
         public int EasingType { get; set; }
 
         [JsonProperty("end")]
-        public double End { get; set; }
+        public float End { get; set; }
 
         [JsonProperty("endTime")]
         public List<int> EndTime { get; set; }
@@ -259,7 +292,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         public int Linkgroup { get; set; }
 
         [JsonProperty("start")]
-        public double Start { get; set; }
+        public float Start { get; set; }
 
         [JsonProperty("startTime")]
         public List<int> StartTime { get; set; }
@@ -277,7 +310,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         public int EasingType { get; set; }
 
         [JsonProperty("end")]
-        public double End { get; set; }
+        public float End { get; set; }
 
         [JsonProperty("endTime")]
         public List<int> EndTime { get; set; }
@@ -286,7 +319,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         public int Linkgroup { get; set; }
 
         [JsonProperty("start")]
-        public double Start { get; set; }
+        public float Start { get; set; }
 
         [JsonProperty("startTime")]
         public List<int> StartTime { get; set; }

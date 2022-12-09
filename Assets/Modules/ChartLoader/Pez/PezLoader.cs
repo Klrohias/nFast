@@ -13,10 +13,10 @@ namespace Klrohias.NFast.ChartLoader.Pez
 {
     public class PezLoader
     {
-        private const string PEZ_INFO = "info.txt";
-        private static Regex chartLocate = new Regex("Chart:([0-9a-zA-Z .]+)");
+        internal const string PEZ_INFO = "info.txt";
+        internal static Regex chartLocate = new Regex("Chart:([0-9a-zA-Z .]+)");
 
-        private static IEnumerable<ZipEntry> readZipEntries(ZipFile zipfile)
+        internal static IEnumerable<ZipEntry> readZipEntries(ZipFile zipfile)
         {
             foreach (ZipEntry zipEntry in zipfile)
             {

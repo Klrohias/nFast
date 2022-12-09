@@ -12,6 +12,7 @@ using Klrohias.NFast.Utilities;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Drawing;
+using Klrohias.NFast.ChartLoader.LargePez;
 using Klrohias.NFast.GamePlay;
 using Klrohias.NFast.Native;
 using SixLabors.ImageSharp.Formats.Bmp;
@@ -30,10 +31,17 @@ public class GamePlayer : MonoBehaviour
     private ObjectPool notePool;
     private ObjectPool holdNotePool;
     public GameObject JudgeLinePrefab;
+    private bool gameRunning = false;
+
+    public class GameStartInfo
+    {
+        public bool UseLargeChart = false;
+        public string Path = "";
+    }
     async void Start()
     {
         // load chart file
-        var loadInstruction = NavigationService.Get().ExtraData as string;
+        var loadInstruction = NavigationService.Get().ExtraData as GameStartInfo;
         if (loadInstruction == null) throw new InvalidOperationException("failed to load: unknown");
 
         mainTouchService = TouchService.Get();
@@ -41,7 +49,7 @@ public class GamePlayer : MonoBehaviour
         SetupScreenScale();
         BackgroundTransform.localScale = ScaleVector3(BackgroundTransform.localScale);
 
-        await LoadChart(loadInstruction);
+        await LoadChart(loadInstruction.Path, loadInstruction.UseLargeChart);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
         block.SetTexture("_MainTex", coverTexture);
         foreach (var backgroundImage in BackgroundImages)
@@ -66,8 +74,17 @@ public class GamePlayer : MonoBehaviour
 
     private Texture2D coverTexture = null;
     private AudioClip audioClip = null;
-    async Task LoadChart(string filePath)
+    async Task LoadChart(string filePath, bool useLargeChart = false)
     {
+        var cachePath = OSService.Get().CachePath;
+        if (useLargeChart)
+        {
+            await Async.RunOnThread(() =>
+            {
+                var largePezChart = LargePezLoader.Load(filePath, cachePath);
+            });
+            return;
+        }
         // TODO: support pez only now
         PezRoot pezChart = null;
         Chart chart = null;
@@ -80,8 +97,8 @@ public class GamePlayer : MonoBehaviour
         Debug.Log($"load pez chart: {stopwatch.ElapsedMilliseconds} ms");
         
         stopwatch.Restart();
-        var coverPath = Path.Combine(OSService.Get().CachePath, pezChart.Metadata.Background);
-        var musicPath = Path.Combine(OSService.Get().CachePath, pezChart.Metadata.Song);
+        var coverPath = Path.Combine(cachePath, pezChart.Metadata.Background);
+        var musicPath = Path.Combine(cachePath, pezChart.Metadata.Song);
         bool coverExtracted = false;
         bool audioExtracted = false;
         await Task.WhenAll(Async.RunOnThread(() =>
@@ -158,7 +175,7 @@ public class GamePlayer : MonoBehaviour
     }
 
     private TouchService mainTouchService;
-    void GameBegin()
+    async void GameBegin()
     {
         Debug.Log("game begin");
         linePool = new(() =>
@@ -170,6 +187,20 @@ public class GamePlayer : MonoBehaviour
         }, 5);
         
         mainTouchService.enabled = true;
+        gameRunning = true;
+        Threading.RunNewThread(EventsProducer);
+    }
+
+    private LineEvent[] lineEvents = null;
+    private int lineEventsBegin = 0;
+    private LineEvent[][] lineEventsChucks = new LineEvent[4][];
+    private int eventsChuckBegin = 0;
+    private void EventsProducer()
+    {
+        while (gameRunning)
+        {
+
+        }
     }
 
     private Task runOnMainThread(Func<Task> a)
@@ -187,9 +218,15 @@ public class GamePlayer : MonoBehaviour
         });
     }
 
+    void GameTick()
+    {
+
+    }
     void Update()
     {
         while (runOnMainThreadQueue.Count > 0)
             runOnMainThreadQueue.Dequeue()();
+
+        if (gameRunning) GameTick();
     }
 }

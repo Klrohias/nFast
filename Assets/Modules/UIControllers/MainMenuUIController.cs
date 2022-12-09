@@ -14,7 +14,11 @@ namespace Klrohias.NFast.UIControllers
         {
             TestButton.onClick.AddListener(() =>
             {
-                NavigationService.Get().ExtraData = "H:/testchart1.pez";
+                NavigationService.Get().ExtraData = new GamePlayer.GameStartInfo()
+                {
+                    Path = "H:/testchart1.pez",
+                    UseLargeChart = true
+                };
                 NavigationService.Get().LoadScene("Scenes/PlayScene");
             });
         }

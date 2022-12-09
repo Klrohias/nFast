@@ -1,12 +1,48 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Klrohias.NFast.ChartLoader;
 using UnityEngine;
 
-public class Chart
+public class Chart : IChart
 {
     public ChartMetadata Metadata { get; set; }
     public ChartNote[] Notes { get; set; }
     public ChartLine[] Lines { get; set; }
+    public IEnumerator<IList<ChartNote>> GetNotes()
+    {
+        ChartNote[] notes = new ChartNote[Notes.Length];
+        Array.Copy(Notes, notes, Notes.Length);
+        int reduceIndex = 0;
+        int s2Index = 0;
+        while (reduceIndex < notes.Length)
+        {
+            List<ChartNote> resultNotes = new List<ChartNote>(Math.Max(8, (notes.Length - reduceIndex) / 4));
+            for (int i = reduceIndex; i < notes.Length; i++)
+            {
+                var note = notes[i];
+                if (note.StartTime.S2 <= s2Index && note.EndTime.S2 <= s2Index)
+                {
+                    resultNotes.Add(note);
+                }
+
+                if (note.EndTime.S2 == s2Index)
+                {
+                    notes[i] = notes[reduceIndex];
+                    notes[reduceIndex] = null;
+                    reduceIndex++;
+                }
+            }
+
+            s2Index++;
+            yield return resultNotes;
+        }
+    }
+
+    public IEnumerator<IList<LineEvent>> GetEvents()
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class ChartMetadata
@@ -40,6 +76,11 @@ public enum EventType
     MoveY,
     Rotate,
     Speed,
+}
+
+public enum EasingFunc
+{
+
 }
 public class LineEvent
 {
