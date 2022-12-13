@@ -16,12 +16,14 @@ namespace Klrohias.NFast.ChartLoader.LargePez
         public UnbufferedStreamReader(Stream stream)
         {
             this.stream = stream;
+            streamLength = stream.Length;
             MakeBuffer();
         }
         public UnbufferedStreamReader(Stream stream, int bufferSize)
         {
             this.stream = stream;
             this.bufferSize = bufferSize;
+            streamLength = stream.Length;
             MakeBuffer();
         }
 
@@ -79,11 +81,20 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             get => basePosition + bufferPosition;
             set
             {
-                stream.Position = value;
-                MakeBuffer();
+                if (value >= basePosition && value <= basePosition + bufferSize)
+                {
+                    bufferPosition = value - basePosition;
+                }
+                else
+                {
+
+                    stream.Position = value;
+                    MakeBuffer();
+                }
             }
         }
 
-        public bool EndOfStream => Position >= stream.Length;
+        private long streamLength = 0L;
+        public bool EndOfStream => Position >= streamLength;
     }
 }

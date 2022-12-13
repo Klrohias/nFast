@@ -15,14 +15,17 @@ namespace Klrohias.NFast.ChartLoader.LargePez
         {
             stream = inputStream;
             stream.Position = 0;
-            reader = new UnbufferedStreamReader(stream);
+            reader = new UnbufferedStreamReader(stream, 1024 * 1024); // 1 MB
         }
 
         private const string Whitespaces = " \t\n\r\0";
+        private long whitespaceCount = 0;
+        public long WhitespaceCount => whitespaceCount;
         private void SkipWhitespace()
         {
             while (Whitespaces.Contains((char) PeekChar()))
             {
+                whitespaceCount++;
                 NextChar();
             }
         }

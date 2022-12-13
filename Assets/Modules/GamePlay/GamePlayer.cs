@@ -93,6 +93,7 @@ public class GamePlayer : MonoBehaviour
 
         var coverPath = "";
         var musicPath = "";
+
         if (useLargeChart)
         {
             await Async.RunOnThread(() =>
@@ -122,6 +123,7 @@ public class GamePlayer : MonoBehaviour
             await Async.RunOnThread(() =>
             {
                 chart = pezChart = PezLoader.LoadPezChart(filePath);
+                pezChart.ConvertToNFastChart();
             });
 
             bool coverExtracted = false;
@@ -131,10 +133,7 @@ public class GamePlayer : MonoBehaviour
             coverPath = Path.Combine(cachePath, pezChart.PezMetadata.Background);
             musicPath = Path.Combine(cachePath, pezChart.PezMetadata.Song);
 
-            await Task.WhenAll(Async.RunOnThread(() =>
-                {
-                    pezChart.ConvertToNFastChart();
-                }),
+            await Task.WhenAll(
                 Async.RunOnThread(() =>
                 {
                     var coverStream = File.OpenWrite(coverPath);
@@ -157,6 +156,7 @@ public class GamePlayer : MonoBehaviour
                     {
                         await Task.Delay(80);
                     }
+
                     pezChart.DropZipData();
                 })
             );

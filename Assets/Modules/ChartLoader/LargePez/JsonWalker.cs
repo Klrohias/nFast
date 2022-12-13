@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
@@ -15,8 +16,9 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             NextToken();
         }
         private JsonToken currentToken = JsonToken.None;
+        public JsonToken CurrentToken => currentToken;
 
-        private JsonToken NextToken()
+        public JsonToken NextToken()
         {
             return currentToken = tokenizer.ParseNextToken();
         }
@@ -99,15 +101,29 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             }
         }
 
+        /// <summary>
+        /// get all elements of array
+        /// requires: begin token point to '['
+        /// requires: if you want to do something with element, make sure currentToken point to the last token of element
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public IEnumerable<JsonToken> ReadElements()
         {
             while (true)
             {
-                if (currentToken.Type == JsonTokenType.RightBracket) break;
                 yield return currentToken;
-                SkipBlock();
+                NextToken();
+                if (currentToken.Type == JsonTokenType.RightBracket)
+                {
+                    tokenizer.Goto(currentToken.Position);
+                    break;
+                }
+                if (currentToken.Type != JsonTokenType.Comma)
+                    throw new Exception($"Unexpected '{currentToken}'"); // skip ','
+                NextToken();
             }
-        }
+        } 
 
         /// <summary>
         /// extract to properties of object
@@ -176,18 +192,41 @@ namespace Klrohias.NFast.ChartLoader.LargePez
 
             property.SetValue(target, method.Invoke(null, new object[] {value}));
         }
-        public void SkipBlock()
+        public void SkipBlock(bool checkError = false)
         {
             var token = currentToken;
             if (token.Type != JsonTokenType.LeftBrace && token.Type != JsonTokenType.LeftBracket)
             {
+                NextToken();
                 return;
             }
 
 
             var layers = new List<uint>();
             var layerCount = 0;
-
+            var inString = false;
+            if (!checkError)
+            {
+                layerCount++;
+                while (layerCount > 0)
+                {
+                    var ch = tokenizer.NextChar();
+                    if (ch == '"') inString = !inString;
+                    if (inString) continue;
+                    switch (ch)
+                    {
+                        case '{':
+                        case '[':
+                            layerCount++;
+                            break;
+                        case '}':
+                        case ']':
+                            layerCount--;
+                            break;
+                    }
+                }
+                return;
+            }
             void PushLayer(int val = 0)
             {
                 var i = layerCount / 32;
@@ -213,7 +252,6 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             }
             
             PushLayer(token.Type == JsonTokenType.LeftBrace ? 1 : 0);
-            bool inString = false;
             while (layerCount > 0)
             {
                 var ch = tokenizer.NextChar();
