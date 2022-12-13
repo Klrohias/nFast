@@ -7,13 +7,25 @@ using Newtonsoft.Json;
 
 namespace Klrohias.NFast.ChartLoader.Pez
 {
-    public class PezRoot
+    public class PezChart : IChart
     {
-        [JsonProperty("META")]
-        public PezMetadata Metadata { get; set; } = null;
-
         internal ZipFile zipFile = null;
         internal Dictionary<string, ZipEntry> files = null;
+        private NFastChart nFastChart = null;
+        public ChartMetadata Metadata => nFastChart.Metadata;
+        public IEnumerator<IList<ChartNote>> GetNotes()
+        {
+            return nFastChart.GetNotes();
+        }
+        public IEnumerator<IList<ChartLine>> GetLines()
+        {
+            return nFastChart.GetLines();
+        }
+        public IList<KeyValuePair<ChartTimespan, float>> BpmEvents { get; }
+
+
+        [JsonProperty("META")]
+        public PezMetadata PezMetadata { get; set; } = null;
 
         [JsonProperty("judgeLineList")]
         public List<PezJudgeLineList> JudgeLineList { get; set; }
@@ -26,9 +38,13 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 yield return note.ToNFastNote(lineId);
             }
         }
-
-        public NFastChart ToChart()
+        public void ConvertToNFastChart()
         {
+            nFastChart = ToNFastChart();
+        }
+        private NFastChart ToNFastChart()
+        {
+            // TODO: decouple event converting
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
             var notesArray = new ChartNote[countOfNotes];
             var linesArray = new ChartLine[JudgeLineList.Count];
@@ -92,7 +108,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
 
             var chart = new NFastChart()
             {
-                Metadata = Metadata.ToChartMetadata(),
+                Metadata = PezMetadata.ToNFastMetadata(),
                 Notes = notesArray,
                 Lines = linesArray
             };
@@ -136,7 +152,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         [JsonProperty("song")]
         public string Song { get; set; }
 
-        public ChartMetadata ToChartMetadata() => new()
+        public ChartMetadata ToNFastMetadata() => new()
         {
             BackgroundFileName = Background,
             Charter = Charter,

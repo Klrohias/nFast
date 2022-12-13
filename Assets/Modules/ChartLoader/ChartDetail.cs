@@ -46,6 +46,8 @@ public class NFastChart : IChart
     {
         yield return Lines;
     }
+
+    public IList<KeyValuePair<ChartTimespan, float>> BpmEvents { get; }
 }
 
 public class ChartMetadata

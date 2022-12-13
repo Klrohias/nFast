@@ -101,13 +101,18 @@ namespace Klrohias.NFast.ChartLoader.LargePez
 
         public IEnumerable<JsonToken> ReadElements()
         {
-            return null;
+            while (true)
+            {
+                if (currentToken.Type == JsonTokenType.RightBracket) break;
+                yield return currentToken;
+                SkipBlock();
+            }
         }
 
         /// <summary>
         /// extract to properties of object
         /// </summary>
-        public void ExtractObject(Type type, object target)
+        public void ExtractObject(Type type, object target, string blacklists = null, Action<string, JsonToken> blacklistCallback = null)
         {
             var properties = type.GetProperties()
                 .Where(x => x.GetCustomAttribute<JsonPropertyAttribute>() != null);
@@ -115,14 +120,18 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             {
                 var property = properties.FirstOrDefault(x =>
                     x.GetCustomAttribute<JsonPropertyAttribute>().PropertyName == key.Value);
-
+                if (blacklists != null && blacklists.Contains(key.Value))
+                {
+                    blacklistCallback?.Invoke(key.Value, value);
+                    continue;
+                }
                 if (value.Type == JsonTokenType.String)
                 {
                     property.SetValue(target, value.Value);
                 }
                 else if (value.Type == JsonTokenType.Number)
                 {
-                    SetNumberProperty(property, value, target);
+                    ExtractNumber(property, value, target);
                 }
                 else if (value.Type == JsonTokenType.LeftBrace)
                 {
@@ -131,12 +140,33 @@ namespace Klrohias.NFast.ChartLoader.LargePez
                     ExtractObject(property.PropertyType, obj);
                 } else if (value.Type == JsonTokenType.LeftBracket)
                 {
-                    throw new NotImplementedException("array is not supported now");
+                    ExtractArray(property, target);
                 }
             }
         }
-
-        private void SetNumberProperty(PropertyInfo property, JsonToken token, object target)
+        private void ExtractArray(PropertyInfo property, object target)
+        {
+            // var type = property.PropertyType;
+            // Type elementType;
+            // if (type.IsGenericType)
+            // {
+            //     // List<Type>
+            //     elementType = type.GenericTypeArguments[0];
+            // }
+            // else
+            // {
+            //     // T[]
+            //     elementType = type.GetElementType();
+            // }
+            // EnterBlock();
+            // foreach (var element in ReadElements())
+            // {
+            //     
+            // }
+            // LeaveBlock();
+            throw new Exception("extracting array is not supported now");
+        }
+        private void ExtractNumber(PropertyInfo property, JsonToken token, object target)
         {
             var type = property.PropertyType;
             var value = token.Value;

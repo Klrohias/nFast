@@ -52,7 +52,8 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             {
                 zipFile = zipFile,
                 tokenizer = tokenizer,
-                walker = walker
+                walker = walker,
+                files = files
             };
 
             walker.EnterBlock();
@@ -68,15 +69,17 @@ namespace Klrohias.NFast.ChartLoader.LargePez
                         var obj = new PezMetadata();
                         walker.ExtractObject(typeof(PezMetadata), obj);
                         walker.LeaveBlock();
+                        chart.metadata = obj.ToNFastMetadata();
                         break;
                     }
+                    
                 }
 
                 Debug.Log(keyValuePair.Key.Value);
             }
 
             Debug.Log("time: " + s1.ElapsedMilliseconds + "ms");
-            return null;
+            return chart;
         }
 
         public static PezNote ExtractNote(LargePezChart chart, long offset)
@@ -114,5 +117,24 @@ namespace Klrohias.NFast.ChartLoader.LargePez
          *      tokenizer.Goto(0);
          *  }
          */
+
+        public static byte[] ExtractFile(LargePezChart root, string name)
+        {
+            if (!root.files.ContainsKey(name)) throw new ArgumentException("file not exists");
+            var file = root.files[name];
+            var result = new MemoryStream(Convert.ToInt32(file.Size));
+            ExtractFile(root, name, result);
+            return result.ToArray();
+        }
+
+        public static void ExtractFile(LargePezChart root, string name, Stream outStream)
+        {
+            if (!root.files.ContainsKey(name)) throw new ArgumentException("file not exists");
+            var file = root.files[name];
+
+            using var stream = root.zipFile.GetInputStream(file);
+            stream.CopyTo(outStream);
+            stream.Close();
+        }
     }
 }

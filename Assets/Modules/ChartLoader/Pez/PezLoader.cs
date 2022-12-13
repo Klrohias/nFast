@@ -23,7 +23,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 yield return zipEntry;
             }
         }
-        public static PezRoot LoadPezChart(string path)
+        public static PezChart LoadPezChart(string path)
         {
             // pez is a zip file
             // firstly, open zip
@@ -46,7 +46,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 throw new Exception("failed to load pez file: chart not found");
 
             using var pezChartStream = zipFile.GetInputStream(files[chartName]);
-            var chart = JsonConvert.DeserializeObject<PezRoot>(new StreamReader(pezChartStream).ReadToEnd());
+            var chart = JsonConvert.DeserializeObject<PezChart>(new StreamReader(pezChartStream).ReadToEnd());
 
             chart.zipFile = zipFile;
             chart.files = files;
@@ -54,7 +54,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
             return chart;
         }
 
-        public static byte[] ExtractFile(PezRoot root, string name)
+        public static byte[] ExtractFile(PezChart root, string name)
         {
             if (!root.files.ContainsKey(name)) throw new ArgumentException("file not exists");
             var file = root.files[name];
@@ -63,7 +63,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
             return result.ToArray();
         }
 
-        public static void ExtractFile(PezRoot root, string name, Stream outStream)
+        public static void ExtractFile(PezChart root, string name, Stream outStream)
         {
             if (!root.files.ContainsKey(name)) throw new ArgumentException("file not exists");
             var file = root.files[name];

@@ -7,10 +7,14 @@ namespace Klrohias.NFast.ChartLoader.LargePez
     public class LargePezChart : IChart
     {
         internal ZipFile zipFile = null;
+        internal Dictionary<string, ZipEntry> files = null;
+
         internal Dictionary<uint, List<long>> offsetMap = new();
         internal int noteCount = 0;
         internal JsonTokenizer tokenizer = null;
         internal JsonWalker walker = null;
+        internal ChartMetadata metadata;
+        public ChartMetadata Metadata => metadata;
         public IEnumerator<IList<ChartNote>> GetNotes()
         {
             uint beats = 0;
@@ -28,5 +32,7 @@ namespace Klrohias.NFast.ChartLoader.LargePez
         {
             throw new System.NotImplementedException();
         }
+
+        public IList<KeyValuePair<ChartTimespan, float>> BpmEvents { get; }
     }
 }

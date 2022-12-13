@@ -10,29 +10,42 @@ using Klrohias.NFast.ChartLoader.Pez;
 using Klrohias.NFast.Navigation;
 using Klrohias.NFast.Utilities;
 using UnityEngine;
-using UnityEngine.UI;
-using System.Drawing;
 using Klrohias.NFast.ChartLoader.LargePez;
 using Klrohias.NFast.GamePlay;
 using Klrohias.NFast.Native;
-using SixLabors.ImageSharp.Formats.Bmp;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
-using Image = SixLabors.ImageSharp.Image;
 
 public class GamePlayer : MonoBehaviour
 {
+    private bool gameRunning = false;
+    private SystemTimer timer = null;
+    private float currentTime = 0f;
+
+    // screen adaption
     private const float ASPECT_RATIO = 16f / 9f;
+    private float scaleFactor = 1f;
+
+    // unity resources
     public Transform BackgroundTransform;
     public SpriteRenderer[] BackgroundImages;
-    private float scaleFactor = 1f;
-    private Queue<Action> runOnMainThreadQueue = new();
+    public GameObject JudgeLinePrefab;
+    private Texture2D coverTexture = null;
+    private AudioClip audioClip = null;
+
+    // object pools
     private ObjectPool linePool;
     private ObjectPool notePool;
     private ObjectPool holdNotePool;
-    public GameObject JudgeLinePrefab;
-    private bool gameRunning = false;
+
+    // chart data
     private IChart chart;
+    private Dictionary<ChartTimespan, float> bpmEvents;
+    private float currentBpm = 0f;
+
+
+    // services
+    private TouchService mainTouchService;
 
     public class GameStartInfo
     {
@@ -72,66 +85,87 @@ public class GamePlayer : MonoBehaviour
             scaleFactor = aspectRatio / ASPECT_RATIO;
         }
     }
-
-    private Texture2D coverTexture = null;
-    private AudioClip audioClip = null;
     async Task LoadChart(string filePath, bool useLargeChart = false)
     {
         var cachePath = OSService.Get().CachePath;
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        var coverPath = "";
+        var musicPath = "";
         if (useLargeChart)
         {
             await Async.RunOnThread(() =>
             {
-                var largePezChart = LargePezLoader.Load(filePath, cachePath);
+                chart = LargePezLoader.Load(filePath, cachePath);
+                coverPath = Path.Combine(cachePath, chart.Metadata.BackgroundFileName);
+                musicPath = Path.Combine(cachePath, chart.Metadata.MusicFileName);
             });
-            return;
-        }
-        // TODO: support pez only now
-        PezRoot pezChart = null;
-        NFastChart chart = null;
-        
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        await Async.RunOnThread(() =>
-        {
-            pezChart = PezLoader.LoadPezChart(filePath);
-        });
-        Debug.Log($"load pez chart: {stopwatch.ElapsedMilliseconds} ms");
-        
-        stopwatch.Restart();
-        var coverPath = Path.Combine(cachePath, pezChart.Metadata.Background);
-        var musicPath = Path.Combine(cachePath, pezChart.Metadata.Song);
-        bool coverExtracted = false;
-        bool audioExtracted = false;
-        await Task.WhenAll(Async.RunOnThread(() =>
-            {
-                chart = pezChart.ToChart();
-            }),
-            Async.RunOnThread(() =>
-            {
-                var coverStream = File.OpenWrite(coverPath);
-                PezLoader.ExtractFile(pezChart, pezChart.Metadata.Background, coverStream);
-                coverStream.Flush();
-                coverStream.Close();
-                coverExtracted = true;
-            }),
-            Async.RunOnThread(() =>
-            {
-                var musicStream = File.OpenWrite(musicPath);
-                PezLoader.ExtractFile(pezChart, pezChart.Metadata.Background, musicStream);
-                musicStream.Flush();
-                musicStream.Close();
-                audioExtracted = true;
-            }),
-            Task.Run(async () =>
-            {
-                while (!(audioExtracted && coverExtracted))
+            await Task.WhenAll(Async.RunOnThread(() =>
                 {
-                    await Task.Delay(80);
-                }
-                pezChart.DropZipData();
-            })
-        );
+                    var coverStream = File.OpenWrite(coverPath);
+                    LargePezLoader.ExtractFile((LargePezChart)chart, chart.Metadata.BackgroundFileName, coverStream);
+                    coverStream.Flush();
+                    coverStream.Close();
+                }),
+                Async.RunOnThread(() =>
+                {
+                    var musicStream = File.OpenWrite(musicPath);
+                    LargePezLoader.ExtractFile((LargePezChart)chart, chart.Metadata.MusicFileName, musicStream);
+                    musicStream.Flush();
+                    musicStream.Close();
+                }));
+        }
+        else
+        {
+            PezChart pezChart = null;
+            await Async.RunOnThread(() =>
+            {
+                chart = pezChart = PezLoader.LoadPezChart(filePath);
+            });
 
+            bool coverExtracted = false;
+            bool audioExtracted = false;
+
+            // Metadata == null here, so use PezMetadata
+            coverPath = Path.Combine(cachePath, pezChart.PezMetadata.Background);
+            musicPath = Path.Combine(cachePath, pezChart.PezMetadata.Song);
+
+            await Task.WhenAll(Async.RunOnThread(() =>
+                {
+                    pezChart.ConvertToNFastChart();
+                }),
+                Async.RunOnThread(() =>
+                {
+                    var coverStream = File.OpenWrite(coverPath);
+                    PezLoader.ExtractFile(pezChart, pezChart.Metadata.BackgroundFileName, coverStream);
+                    coverStream.Flush();
+                    coverStream.Close();
+                    coverExtracted = true;
+                }),
+                Async.RunOnThread(() =>
+                {
+                    var musicStream = File.OpenWrite(musicPath);
+                    PezLoader.ExtractFile(pezChart, pezChart.Metadata.MusicFileName, musicStream);
+                    musicStream.Flush();
+                    musicStream.Close();
+                    audioExtracted = true;
+                }),
+                Task.Run(async () =>
+                {
+                    while (!(audioExtracted && coverExtracted))
+                    {
+                        await Task.Delay(80);
+                    }
+                    pezChart.DropZipData();
+                })
+            );
+
+            Debug.Log($"load pez chart: {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        stopwatch.Restart();
+        
         await Task.WhenAll(Async.CallbackToTask((resolve) =>
         {
             IEnumerator CO_LoadMusic()
@@ -174,8 +208,6 @@ public class GamePlayer : MonoBehaviour
 
         Debug.Log($"convert pez to nfast chart + extract files + load cover and audio files: {stopwatch.ElapsedMilliseconds} ms");
     }
-
-    private TouchService mainTouchService;
     async void GameBegin()
     {
         Debug.Log("game begin");
@@ -186,48 +218,44 @@ public class GamePlayer : MonoBehaviour
             obj.transform.localScale = ScaleVector3(obj.transform.localScale);
             return obj;
         }, 5);
-        
+
+        noteEnumerator = chart.GetNotes();
+        timer = new SystemTimer();
+
+        // enable services and threads
         mainTouchService.enabled = true;
         gameRunning = true;
         Threading.RunNewThread(EventsProducer);
+        requireNewNotesChunk = true;
     }
 
-    private LineEvent[] lineEvents = null;
-    private int lineEventsBegin = 0;
-    private LineEvent[][] lineEventsChucks = new LineEvent[4][];
-    private int eventsChuckBegin = 0;
+    private IEnumerator<IList<ChartNote>> noteEnumerator = null;
+    private IList<ChartNote>[] notesChunks = new IList<ChartNote>[4];
+    private int notesChunksBegin = 0;
+    private bool requireNewNotesChunk = false;
     private void EventsProducer()
     {
+        var emptyList = new List<ChartNote>();
         while (gameRunning)
         {
-
-        }
-    }
-
-    private Task runOnMainThread(Func<Task> a)
-    {
-        return Async.CallbackToTask((resolve) =>
-        {
-            lock (runOnMainThreadQueue)
+            Threading.WaitUntil(() => requireNewNotesChunk, 100);
+            for (int i = 0; i < notesChunks.Length; i++)
             {
-                runOnMainThreadQueue.Enqueue(async () =>
-                {
-                    await a();
-                    resolve();
-                });
+                if (notesChunks[i] != null) continue;
+
+                if (!noteEnumerator.MoveNext()) notesChunks[i] = emptyList;
+                else notesChunks[i] = noteEnumerator.Current;
             }
-        });
+            requireNewNotesChunk = false;
+        }
     }
 
     void GameTick()
     {
-
+        currentTime = timer.Time;
     }
     void Update()
     {
-        while (runOnMainThreadQueue.Count > 0)
-            runOnMainThreadQueue.Dequeue()();
-
         if (gameRunning) GameTick();
     }
 }
