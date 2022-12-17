@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
@@ -18,7 +19,13 @@ namespace Klrohias.NFast.ChartLoader.Pez
         {
             return nFastChart.GetNotes();
         }
-        public IEnumerator<IList<ChartLine>> GetLines()
+
+        public IEnumerator<IList<LineEvent>> GetEvents()
+        {
+            return nFastChart.GetEvents();
+        }
+
+        public IList<ChartLine> GetLines()
         {
             return nFastChart.GetLines();
         }
@@ -32,7 +39,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         public PezMetadata PezMetadata { get; set; } = null;
 
         [JsonProperty("judgeLineList")]
-        public List<PezJudgeLineList> JudgeLineList { get; set; }
+        public List<PezJudgeLine> JudgeLineList { get; set; }
 
         [JsonProperty("BPMList")]
         public List<PezBpmEvent> BpmEvents { get; set; }
@@ -53,15 +60,21 @@ namespace Klrohias.NFast.ChartLoader.Pez
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
             var notesArray = new ChartNote[countOfNotes];
             var linesArray = new ChartLine[JudgeLineList.Count];
+            var countOfEvents = JudgeLineList.Sum(x => x.EventLayers.Sum(y => y.EventCount));
+            var eventsArray = new LineEvent[countOfEvents];
+
             uint lineId = 0;
-            int noteIndex = 0;
+            var noteIndex = 0;
+            var eventIndex = 0;
             foreach (var judgeLine in JudgeLineList)
             {
                 var line = linesArray[lineId] = judgeLine.ToChartLine();
                 line.LineId = lineId;
 
                 // cast events
-                line.LineEvents = judgeLine.EventLayers.SelectMany(x => x.ToNFastEvents()).ToArray();
+                var events = judgeLine.EventLayers.SelectMany(x => x.ToNFastEvents(lineId)).ToArray();
+                events.CopyTo(eventsArray, eventIndex);
+                eventIndex += events.Length;
 
                 // cast notes
                 if (judgeLine.Notes != null)
@@ -75,14 +88,15 @@ namespace Klrohias.NFast.ChartLoader.Pez
 
                 lineId++;
             }
-
+            
             // generate nfast chart
             var chart = new NFastChart()
             {
                 Metadata = PezMetadata.ToNFastMetadata(),
                 Notes = notesArray,
                 Lines = linesArray,
-                BpmEvents = bpmEvents
+                BpmEvents = bpmEvents,
+                LineEvents = eventsArray
             };
             return chart;
         }
@@ -154,13 +168,13 @@ namespace Klrohias.NFast.ChartLoader.Pez
         public int EasingType { get; set; }
 
         [JsonProperty("end")]
-        public int End { get; set; }
+        public float End { get; set; }
 
         [JsonProperty("endTime")]
         public List<int> EndTime { get; set; }
 
         [JsonProperty("start")]
-        public int Start { get; set; }
+        public float Start { get; set; }
 
         [JsonProperty("startTime")]
         public List<int> StartTime { get; set; }
@@ -169,6 +183,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         {
             switch (EasingType)
             {
+                case 0: return EasingFunction.Linear;
                 case 1: return EasingFunction.Linear;
                 case 2: return EasingFunction.SineOut;
                 case 3: return EasingFunction.SineIn;
@@ -197,10 +212,10 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 case 26: return EasingFunction.BounceOut;
                 case 27: return EasingFunction.BounceIn;
                 case 28: return EasingFunction.BounceInOut;
-                default: throw new Exception("Unknown easing function");
+                default: throw new Exception($"Unknown easing function {EasingType}");
             }
         }
-        public LineEvent ToNFastEvent(EventType type = EventType.Alpha)
+        public LineEvent ToNFastEvent(uint lineId = 0, EventType type = EventType.Alpha)
         {
             return new LineEvent()
             {
@@ -210,7 +225,8 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 EndTime = new ChartTimespan(EndTime),
                 EndValue = End,
                 EasingFunc = ToNFastEasingFunction(),
-                Type = type
+                Type = type,
+                LineId = lineId
             };
         }
     }
@@ -231,31 +247,36 @@ namespace Klrohias.NFast.ChartLoader.Pez
         [JsonProperty("speedEvents")]
         public List<PezLineEvent> SpeedEvents { get; set; }
 
-        public List<LineEvent> ToNFastEvents()
+        public List<LineEvent> ToNFastEvents(uint lineId = 0)
         {
             var result = new List<LineEvent>();
             if (AlphaEvents != null)
             {
-                result.AddRange(AlphaEvents.Select(x => x.ToNFastEvent(EventType.Alpha)));
+                result.AddRange(AlphaEvents.Select(x => x.ToNFastEvent(lineId, EventType.Alpha)));
             }
             if (MoveXEvents != null)
             {
-                result.AddRange(MoveXEvents.Select(x => x.ToNFastEvent(EventType.MoveX)));
+                result.AddRange(MoveXEvents.Select(x => x.ToNFastEvent(lineId, EventType.MoveX)));
             }
             if (MoveYEvents != null)
             {
-                result.AddRange(MoveYEvents.Select(x => x.ToNFastEvent(EventType.MoveY)));
+                result.AddRange(MoveYEvents.Select(x => x.ToNFastEvent(lineId, EventType.MoveY)));
             }
             if (RotateEvents != null)
             {
-                result.AddRange(RotateEvents.Select(x => x.ToNFastEvent(EventType.Rotate)));
+                result.AddRange(RotateEvents.Select(x => x.ToNFastEvent(lineId, EventType.Rotate)));
             }
             if (SpeedEvents != null)
             {
-                result.AddRange(SpeedEvents.Select(x => x.ToNFastEvent(EventType.Speed)));
+                result.AddRange(SpeedEvents.Select(x => x.ToNFastEvent(lineId, EventType.Speed)));
             }
             return result;
         }
+
+        public int EventCount =>
+            (AlphaEvents?.Count ?? 0) + (MoveXEvents?.Count ?? 0)
+                                      + (MoveYEvents?.Count ?? 0) + (RotateEvents?.Count ?? 0)
+                                      + (SpeedEvents?.Count ?? 0);
     }
 
     public class PezExtended
@@ -263,7 +284,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         [JsonProperty("inclineEvents")]
         public List<PezLineEvent> InclineEvents { get; set; }
     }
-    public class PezJudgeLineList
+    public class PezJudgeLine
     {
         [JsonProperty("Group")]
         public int Group { get; set; }

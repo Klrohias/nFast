@@ -7,7 +7,8 @@ namespace Klrohias.NFast.ChartLoader
     {
         public ChartMetadata Metadata { get; }
         public IEnumerator<IList<ChartNote>> GetNotes();
-        public IEnumerator<IList<ChartLine>> GetLines();
+        public IEnumerator<IList<LineEvent>> GetEvents();
+        public IList<ChartLine> GetLines();
         public IEnumerator<KeyValuePair<ChartTimespan, float>> GetBpmEvents();
     }
 }

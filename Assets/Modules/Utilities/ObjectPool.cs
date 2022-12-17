@@ -48,7 +48,7 @@ namespace Klrohias.NFast.Utilities
                 if (lendObjectBitmap[i] != 0xFF) break;
             }
 
-            if (i == lendObjectBitmap.Length - 1)
+            if (i == lendObjectBitmap.Length)
             {
                 requestNewObject();
             }
@@ -59,7 +59,12 @@ namespace Klrohias.NFast.Utilities
                 if ((lendObjectBitmap[i] >> k & (byte) 0b1) == 0) break;
             }
 
-            var result = objects[i * 8 + k];
+            var index = i * 8 + k;
+            if (index >= objects.Count)
+            {
+                requestNewObject();
+            }
+            var result = objects[index];
             lendObjectBitmap[i] |= (byte) (0b1 << k);
             return result;
         }

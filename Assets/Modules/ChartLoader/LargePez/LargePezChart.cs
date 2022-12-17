@@ -29,7 +29,13 @@ namespace Klrohias.NFast.ChartLoader.LargePez
             }
         }
 
-        public IEnumerator<IList<ChartLine>> GetLines()
+        public IEnumerator<IList<LineEvent>> GetEvents()
+        {
+            throw new System.NotImplementedException();
+        }
+
+
+        public IList<ChartLine> GetLines()
         {
             throw new System.NotImplementedException();
         }

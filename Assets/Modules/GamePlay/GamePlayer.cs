@@ -21,10 +21,15 @@ public class GamePlayer : MonoBehaviour
 {
     private bool gameRunning = false;
     private SystemTimer timer = null;
-    private int currentBeatCount = 0;
-    private int lastBeatCount = 0;
-    private float currentBeats = 0f;
 
+    // game running
+    private int currentBeatCount = 0;
+    private int lastBeatCount = -1;
+    private float currentBeats = 0f;
+    private KeyValuePair<ChartTimespan, float> nextBpmEvent;
+    private float currentBpm = 0f;
+    private float beatLast = 0f;
+    private IEnumerator<KeyValuePair<ChartTimespan, float>> bpmEventGenerator;
 
     // events
     private List<LineEvent> runningEvents = new List<LineEvent>();
@@ -48,11 +53,8 @@ public class GamePlayer : MonoBehaviour
 
     // chart data
     private IChart chart;
-    private KeyValuePair<ChartTimespan, float> nextBpmEvent;
-    private float currentBpm = 0f;
-    private float beatLast = 0f;
-    private IEnumerator<KeyValuePair<ChartTimespan, float>> bpmEventGenerator;
-
+    private IList<ChartLine> lines;
+    private List<GameObject> lineObjects = new List<GameObject>();
 
     // services
     private TouchService mainTouchService;
@@ -229,8 +231,6 @@ public class GamePlayer : MonoBehaviour
             return obj;
         }, 5);
 
-        noteEnumerator = chart.GetNotes();
-
         // start timer
         timer = new SystemTimer();
         timer.Reset();
@@ -243,16 +243,27 @@ public class GamePlayer : MonoBehaviour
         // enable services and threads
         mainTouchService.enabled = true;
         gameRunning = true;
+        Threading.RunNewThread(NotesProducer);
         Threading.RunNewThread(EventsProducer);
         requireNewNotesChunk = true;
-    }
+        requireNewEventsChunk = true;
 
-    private IEnumerator<IList<ChartNote>> noteEnumerator = null;
+        // generate lines
+        lines = chart.GetLines();
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var obj = linePool.RequestObject();
+            lineObjects.Add(obj);
+            obj.SetActive(true);
+        }
+    }
+    
     private IList<ChartNote>[] notesChunks = new IList<ChartNote>[4];
     private int notesChunksBegin = 0;
     private bool requireNewNotesChunk = false;
-    private void EventsProducer()
+    private void NotesProducer()
     {
+        var generator = chart.GetNotes();
         var emptyList = new List<ChartNote>();
         while (gameRunning)
         {
@@ -261,14 +272,50 @@ public class GamePlayer : MonoBehaviour
             {
                 if (notesChunks[i] != null) continue;
 
-                if (!noteEnumerator.MoveNext()) notesChunks[i] = emptyList;
-                else notesChunks[i] = noteEnumerator.Current;
+                if (!generator.MoveNext()) notesChunks[i] = emptyList;
+                else notesChunks[i] = generator.Current;
             }
             requireNewNotesChunk = false;
         }
     }
-
+    private IList<LineEvent>[] eventsChunks = new IList<LineEvent>[4];
+    private int eventsChunksBegin = 0;
+    private bool requireNewEventsChunk = false;
+    private void EventsProducer()
+    {
+        var generator = chart.GetEvents();
+        var emptyList = new List<LineEvent>();
+        while (gameRunning)
+        {
+            Threading.WaitUntil(() => requireNewEventsChunk, 100);
+            for (int i = 0; i < eventsChunks.Length; i++)
+            {
+                if (eventsChunks[i] != null) continue;
+                if (!generator.MoveNext()) eventsChunks[i] = emptyList;
+                else eventsChunks[i] = generator.Current;
+            }
+            requireNewEventsChunk = false;
+        }
+    }
     private void BeatUpdate()
+    {
+        // add new line events
+        // TODO: don't use List<> for runningEvents
+        // wait for thread
+        while (eventsChunks[eventsChunksBegin] == null)
+        {
+        }
+        runningEvents.AddRange(eventsChunks[eventsChunksBegin]);
+        eventsChunks[eventsChunksBegin] = null;
+        eventsChunksBegin++;
+        if (eventsChunksBegin == eventsChunks.Length)
+        {
+            eventsChunksBegin = 0;
+        }
+        requireNewEventsChunk = true;
+    }
+
+    private void ProcessLineEvents()
     {
 
     }
@@ -293,6 +340,8 @@ public class GamePlayer : MonoBehaviour
             }
             lastBeatCount = currentBeatCount;
         }
+
+        ProcessLineEvents();
     }
     void Update()
     {

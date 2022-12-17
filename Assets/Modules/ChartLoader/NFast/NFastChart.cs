@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Klrohias.NFast.ChartLoader;
 using UnityEngine;
 
@@ -11,6 +12,7 @@ namespace Klrohias.NFast.ChartLoader.NFast
         public ChartMetadata Metadata { get; set; }
         public ChartNote[] Notes { get; set; }
         public ChartLine[] Lines { get; set; }
+        public LineEvent[] LineEvents { get; set; }
         public List<KeyValuePair<ChartTimespan, float>> BpmEvents { get; set; }
 
         public IEnumerator<IList<ChartNote>> GetNotes()
@@ -41,9 +43,37 @@ namespace Klrohias.NFast.ChartLoader.NFast
             }
         }
 
-        public IEnumerator<IList<ChartLine>> GetLines()
+        public IEnumerator<IList<LineEvent>> GetEvents()
         {
-            yield return Lines;
+            var events = new LineEvent[LineEvents.Length];
+            Array.Copy(LineEvents, events, LineEvents.Length);
+            int reduceIndex = 0;
+            int beats = 0;
+
+            while (reduceIndex < events.Length)
+            {
+                var resultEvents = new List<LineEvent>(Math.Max(8, (events.Length - reduceIndex) / 4));
+                for (int i = reduceIndex; i < events.Length; i++)
+                {
+                    var lineEvent = events[i];
+                    var startTime = (int)lineEvent.BeginTime.Beats;
+                    if (startTime == beats)
+                    {
+                        resultEvents.Add(lineEvent);
+                        events[i] = events[reduceIndex];
+                        events[reduceIndex] = null;
+                        reduceIndex++;
+                    }
+                }
+
+                beats++;
+                yield return resultEvents;
+            }
+        }
+
+        public IList<ChartLine> GetLines()
+        {
+            return Lines;
         }
 
         public IEnumerator<KeyValuePair<ChartTimespan, float>> GetBpmEvents()
@@ -73,7 +103,6 @@ namespace Klrohias.NFast.ChartLoader.NFast
     public class ChartLine
     {
         public uint LineId { get; set; } = 0;
-        public LineEvent[] LineEvents;
     }
 
     public enum EventType
