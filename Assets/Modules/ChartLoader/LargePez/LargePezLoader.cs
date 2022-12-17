@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
+using Klrohias.NFast.ChartLoader.NFast;
 using Klrohias.NFast.ChartLoader.Pez;
 using Debug = UnityEngine.Debug;
 
@@ -136,6 +137,11 @@ namespace Klrohias.NFast.ChartLoader.LargePez
                 walker.LeaveBlock();
             }
 
+            void ExtractEventLayers()
+            {
+
+            }
+
             void ExtractJudgeLine()
             {
                 walker.EnterBlock();
@@ -144,12 +150,28 @@ namespace Klrohias.NFast.ChartLoader.LargePez
                     walker.EnterBlock();
                     foreach (var property in walker.ReadProperties())
                     {
-                        if (property.Key.Value != "notes") continue;
-                        if (useCache) continue;
-                        AnalyzeNotes();
+                        switch (property.Key.Value)
+                        {
+                            case "notes":
+                            {
+                                if (useCache) continue;
+                                AnalyzeNotes();
+                                break;
+                            }
+                            case "eventLayers":
+                            {
+                                ExtractEventLayers();
+                                break;
+                            }
+                        }
                     }
                 }
                 walker.LeaveBlock();
+            }
+
+            void ExtractBpmList()
+            {
+                // TODO
             }
 
             foreach (var keyValuePair in walker.ReadProperties())
@@ -164,6 +186,11 @@ namespace Klrohias.NFast.ChartLoader.LargePez
                     case "judgeLineList":
                     {
                         ExtractJudgeLine();
+                        break;
+                    }
+                    case "BPMList":
+                    {
+                        ExtractBpmList();
                         break;
                     }
                 }

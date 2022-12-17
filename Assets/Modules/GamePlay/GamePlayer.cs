@@ -11,6 +11,7 @@ using Klrohias.NFast.Navigation;
 using Klrohias.NFast.Utilities;
 using UnityEngine;
 using Klrohias.NFast.ChartLoader.LargePez;
+using Klrohias.NFast.ChartLoader.NFast;
 using Klrohias.NFast.GamePlay;
 using Klrohias.NFast.Native;
 using UnityEngine.Networking;
@@ -20,7 +21,14 @@ public class GamePlayer : MonoBehaviour
 {
     private bool gameRunning = false;
     private SystemTimer timer = null;
-    private float currentTime = 0f;
+    private int currentBeatCount = 0;
+    private int lastBeatCount = 0;
+    private float currentBeats = 0f;
+
+
+    // events
+    private List<LineEvent> runningEvents = new List<LineEvent>();
+    
 
     // screen adaption
     private const float ASPECT_RATIO = 16f / 9f;
@@ -40,8 +48,10 @@ public class GamePlayer : MonoBehaviour
 
     // chart data
     private IChart chart;
-    private Dictionary<ChartTimespan, float> bpmEvents;
+    private KeyValuePair<ChartTimespan, float> nextBpmEvent;
     private float currentBpm = 0f;
+    private float beatLast = 0f;
+    private IEnumerator<KeyValuePair<ChartTimespan, float>> bpmEventGenerator;
 
 
     // services
@@ -220,7 +230,15 @@ public class GamePlayer : MonoBehaviour
         }, 5);
 
         noteEnumerator = chart.GetNotes();
+
+        // start timer
         timer = new SystemTimer();
+        timer.Reset();
+
+        // get first bpm event
+        bpmEventGenerator = chart.GetBpmEvents();
+        bpmEventGenerator.MoveNext();
+        nextBpmEvent = bpmEventGenerator.Current;
 
         // enable services and threads
         mainTouchService.enabled = true;
@@ -250,9 +268,31 @@ public class GamePlayer : MonoBehaviour
         }
     }
 
-    void GameTick()
+    private void BeatUpdate()
     {
-        currentTime = timer.Time;
+
+    }
+    private void GameTick()
+    {
+        if (currentBpm != 0f) currentBeats = timer.Time / 1000f / beatLast;
+        if (nextBpmEvent.Key.Beats <= currentBeats)
+        {
+            currentBpm = nextBpmEvent.Value;
+            nextBpmEvent = bpmEventGenerator.MoveNext()
+                ? bpmEventGenerator.Current
+                : new(new(float.PositiveInfinity), 0f);
+            beatLast = 60f / currentBpm;
+        }
+
+        currentBeatCount = (int) currentBeats;
+        if (currentBeatCount > lastBeatCount)
+        {
+            for (int i = 0; i < currentBeatCount - lastBeatCount; i++)
+            {
+                BeatUpdate();
+            }
+            lastBeatCount = currentBeatCount;
+        }
     }
     void Update()
     {

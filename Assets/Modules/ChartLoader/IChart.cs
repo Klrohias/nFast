@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Klrohias.NFast.ChartLoader.NFast;
 
 namespace Klrohias.NFast.ChartLoader
 {
@@ -7,6 +8,6 @@ namespace Klrohias.NFast.ChartLoader
         public ChartMetadata Metadata { get; }
         public IEnumerator<IList<ChartNote>> GetNotes();
         public IEnumerator<IList<ChartLine>> GetLines();
-        public IList<KeyValuePair<ChartTimespan, float>> BpmEvents { get; }
+        public IEnumerator<KeyValuePair<ChartTimespan, float>> GetBpmEvents();
     }
 }

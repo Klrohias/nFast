@@ -16,8 +16,8 @@ namespace Klrohias.NFast.UIControllers
             {
                 NavigationService.Get().ExtraData = new GamePlayer.GameStartInfo()
                 {
-                    Path = "H:/Tan90_Full.pez",
-                    UseLargeChart = true
+                    Path = "H:/testchart.pez",
+                    UseLargeChart = false
                 };
                 NavigationService.Get().LoadScene("Scenes/PlayScene");
             });

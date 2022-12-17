@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
+using Klrohias.NFast.ChartLoader.NFast;
 using Newtonsoft.Json;
 
 namespace Klrohias.NFast.ChartLoader.Pez
@@ -21,7 +22,10 @@ namespace Klrohias.NFast.ChartLoader.Pez
         {
             return nFastChart.GetLines();
         }
-        public IList<KeyValuePair<ChartTimespan, float>> BpmEvents { get; }
+        public IEnumerator<KeyValuePair<ChartTimespan, float>> GetBpmEvents()
+        {
+            return nFastChart.GetBpmEvents();
+        }
 
 
         [JsonProperty("META")]
@@ -30,21 +34,22 @@ namespace Klrohias.NFast.ChartLoader.Pez
         [JsonProperty("judgeLineList")]
         public List<PezJudgeLineList> JudgeLineList { get; set; }
 
-        private static IEnumerable<ChartNote> PezCastToChartNotes(PezJudgeLineList judgeLine, uint lineId)
-        {
-            if(judgeLine.Notes == null) yield break;
-            foreach (var note in judgeLine.Notes)
-            {
-                yield return note.ToNFastNote(lineId);
-            }
-        }
+        [JsonProperty("BPMList")]
+        public List<PezBpmEvent> BpmEvents { get; set; }
+
         public void ConvertToNFastChart()
         {
             nFastChart = ToNFastChart();
         }
         private NFastChart ToNFastChart()
         {
+            // convert bpm events
+            var bpmEvents = BpmEvents.Select(x => x.ToNFastEvent())
+                .OrderBy(x => x.Key.Beats).ToList();
+
             // TODO: decouple event converting
+
+            // convert lines/notes
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
             var notesArray = new ChartNote[countOfNotes];
             var linesArray = new ChartLine[JudgeLineList.Count];
@@ -54,63 +59,30 @@ namespace Klrohias.NFast.ChartLoader.Pez
             {
                 var line = linesArray[lineId] = judgeLine.ToChartLine();
                 line.LineId = lineId;
-                if (judgeLine.EventLayers != null)
-                {
-                    var mainLayer = judgeLine.EventLayers[0];
-                    var events =
-                        new LineEvent[(mainLayer.AlphaEvents?.Count ?? 0) + (mainLayer.MoveXEvents?.Count ?? 0) +
-                                      (mainLayer.MoveYEvents?.Count ?? 0) + (mainLayer.RotateEvents?.Count ?? 0) +
-                                      (mainLayer.SpeedEvents?.Count ?? 0)];
 
-                    var index = 0;
-                    if (judgeLine.EventLayers[0].MoveXEvents != null)
-                    {
-                        foreach (var pezMoveXEvent in judgeLine.EventLayers[0].MoveXEvents)
-                        {
-                            events[index] = new LineEvent
-                            {
-                                Type = EventType.MoveX,
-                                BeginTime = new ChartTimespan(pezMoveXEvent.StartTime),
-                                EndTime = new ChartTimespan(pezMoveXEvent.EndTime),
-                                BeginValue = pezMoveXEvent.Start,
-                                EndValue = pezMoveXEvent.End
-                            };
-                            index++;
-                        }
-                    }
-                    if (judgeLine.EventLayers[0].MoveYEvents != null)
-                    {
-                        foreach (var pezMoveYEvent in judgeLine.EventLayers[0].MoveYEvents)
-                        {
-                            events[index] = new LineEvent
-                            {
-                                Type = EventType.MoveY,
-                                BeginTime = new ChartTimespan(pezMoveYEvent.StartTime),
-                                EndTime = new ChartTimespan(pezMoveYEvent.EndTime),
-                                BeginValue = pezMoveYEvent.Start,
-                                EndValue = pezMoveYEvent.End
-                            };
-                            index++;
-                        }
-                    }
-                    line.LineEvents = events;
-                }
+                // cast events
+                line.LineEvents = judgeLine.EventLayers.SelectMany(x => x.ToNFastEvents()).ToArray();
 
                 // cast notes
-                foreach (var note in PezCastToChartNotes(judgeLine, lineId))
+                if (judgeLine.Notes != null)
                 {
-                    notesArray[noteIndex] = note;
-                    noteIndex++;
+                    foreach (var note in judgeLine.Notes.Select(x => x.ToNFastNote(lineId)))
+                    {
+                        notesArray[noteIndex] = note;
+                        noteIndex++;
+                    }
                 }
 
                 lineId++;
             }
 
+            // generate nfast chart
             var chart = new NFastChart()
             {
                 Metadata = PezMetadata.ToNFastMetadata(),
                 Notes = notesArray,
-                Lines = linesArray
+                Lines = linesArray,
+                BpmEvents = bpmEvents
             };
             return chart;
         }
@@ -162,15 +134,21 @@ namespace Klrohias.NFast.ChartLoader.Pez
             Name = Name
         };
     }
+    public class PezBpmEvent
+    {
+        [JsonProperty("bpm")] public float Bpm;
+        [JsonProperty("startTime")] public List<int> Time;
 
-
-    public class PezAlphaEvent
+        public KeyValuePair<ChartTimespan, float> ToNFastEvent()
+            => new(new ChartTimespan(Time), Bpm);
+    }
+    public class PezLineEvent
     {
         [JsonProperty("easingLeft")]
-        public double EasingLeft { get; set; }
+        public float EasingLeft { get; set; }
 
         [JsonProperty("easingRight")]
-        public double EasingRight { get; set; }
+        public float EasingRight { get; set; }
 
         [JsonProperty("easingType")]
         public int EasingType { get; set; }
@@ -181,67 +159,110 @@ namespace Klrohias.NFast.ChartLoader.Pez
         [JsonProperty("endTime")]
         public List<int> EndTime { get; set; }
 
-        [JsonProperty("linkgroup")]
-        public int Linkgroup { get; set; }
-
         [JsonProperty("start")]
         public int Start { get; set; }
 
         [JsonProperty("startTime")]
         public List<int> StartTime { get; set; }
-    }
 
+        private EasingFunction ToNFastEasingFunction()
+        {
+            switch (EasingType)
+            {
+                case 1: return EasingFunction.Linear;
+                case 2: return EasingFunction.SineOut;
+                case 3: return EasingFunction.SineIn;
+                case 4: return EasingFunction.QuadOut;
+                case 5: return EasingFunction.QuadIn;
+                case 6: return EasingFunction.SineInOut;
+                case 7: return EasingFunction.QuadInOut;
+                case 8: return EasingFunction.CubicOut;
+                case 9: return EasingFunction.CubicIn;
+                case 10: return EasingFunction.QuartOut;
+                case 11: return EasingFunction.QuartIn;
+                case 12: return EasingFunction.CubicInOut;
+                case 13: return EasingFunction.QuartInOut;
+                case 14: return EasingFunction.QuintOut;
+                case 15: return EasingFunction.QuintIn;
+                case 16: return EasingFunction.ExpoOut;
+                case 17: return EasingFunction.ExpoIn;
+                case 18: return EasingFunction.CircOut;
+                case 19: return EasingFunction.CircIn;
+                case 20: return EasingFunction.BackOut;
+                case 21: return EasingFunction.BackIn;
+                case 22: return EasingFunction.CircInOut;
+                case 23: return EasingFunction.BackInOut;
+                case 24: return EasingFunction.ElasticOut;
+                case 25: return EasingFunction.ElasticIn;
+                case 26: return EasingFunction.BounceOut;
+                case 27: return EasingFunction.BounceIn;
+                case 28: return EasingFunction.BounceInOut;
+                default: throw new Exception("Unknown easing function");
+            }
+        }
+        public LineEvent ToNFastEvent(EventType type = EventType.Alpha)
+        {
+            return new LineEvent()
+            {
+                BeginTime = new ChartTimespan(StartTime),
+                BeginValue = Start,
+                EasingFuncRange = (EasingLeft, EasingRight),
+                EndTime = new ChartTimespan(EndTime),
+                EndValue = End,
+                EasingFunc = ToNFastEasingFunction(),
+                Type = type
+            };
+        }
+    }
     public class PezEventLayer
     {
         [JsonProperty("alphaEvents")]
-        public List<PezAlphaEvent> AlphaEvents { get; set; }
+        public List<PezLineEvent> AlphaEvents { get; set; }
 
         [JsonProperty("moveXEvents")]
-        public List<PezMoveXEvent> MoveXEvents { get; set; }
+        public List<PezLineEvent> MoveXEvents { get; set; }
 
         [JsonProperty("moveYEvents")]
-        public List<PezMoveYEvent> MoveYEvents { get; set; }
+        public List<PezLineEvent> MoveYEvents { get; set; }
 
         [JsonProperty("rotateEvents")]
-        public List<PezRotateEvent> RotateEvents { get; set; }
+        public List<PezLineEvent> RotateEvents { get; set; }
 
         [JsonProperty("speedEvents")]
-        public List<PezSpeedEvent> SpeedEvents { get; set; }
+        public List<PezLineEvent> SpeedEvents { get; set; }
+
+        public List<LineEvent> ToNFastEvents()
+        {
+            var result = new List<LineEvent>();
+            if (AlphaEvents != null)
+            {
+                result.AddRange(AlphaEvents.Select(x => x.ToNFastEvent(EventType.Alpha)));
+            }
+            if (MoveXEvents != null)
+            {
+                result.AddRange(MoveXEvents.Select(x => x.ToNFastEvent(EventType.MoveX)));
+            }
+            if (MoveYEvents != null)
+            {
+                result.AddRange(MoveYEvents.Select(x => x.ToNFastEvent(EventType.MoveY)));
+            }
+            if (RotateEvents != null)
+            {
+                result.AddRange(RotateEvents.Select(x => x.ToNFastEvent(EventType.Rotate)));
+            }
+            if (SpeedEvents != null)
+            {
+                result.AddRange(SpeedEvents.Select(x => x.ToNFastEvent(EventType.Speed)));
+            }
+            return result;
+        }
     }
 
     public class PezExtended
     {
         [JsonProperty("inclineEvents")]
-        public List<PezInclineEvent> InclineEvents { get; set; }
+        public List<PezLineEvent> InclineEvents { get; set; }
     }
-
-    public class PezInclineEvent
-    {
-        [JsonProperty("easingLeft")]
-        public double EasingLeft { get; set; }
-
-        [JsonProperty("easingRight")]
-        public double EasingRight { get; set; }
-
-        [JsonProperty("easingType")]
-        public int EasingType { get; set; }
-
-        [JsonProperty("end")]
-        public double End { get; set; }
-
-        [JsonProperty("endTime")]
-        public List<int> EndTime { get; set; }
-
-        [JsonProperty("linkgroup")]
-        public int Linkgroup { get; set; }
-
-        [JsonProperty("start")]
-        public double Start { get; set; }
-
-        [JsonProperty("startTime")]
-        public List<int> StartTime { get; set; }
-    }
-
     public class PezJudgeLineList
     {
         [JsonProperty("Group")]
@@ -280,61 +301,6 @@ namespace Klrohias.NFast.ChartLoader.Pez
         public ChartLine ToChartLine()
             => new ChartLine { };
     }
-
-    public class PezMoveXEvent
-    {
-        [JsonProperty("easingLeft")]
-        public float EasingLeft { get; set; }
-
-        [JsonProperty("easingRight")]
-        public float EasingRight { get; set; }
-
-        [JsonProperty("easingType")]
-        public int EasingType { get; set; }
-
-        [JsonProperty("end")]
-        public float End { get; set; }
-
-        [JsonProperty("endTime")]
-        public List<int> EndTime { get; set; }
-
-        [JsonProperty("linkgroup")]
-        public int Linkgroup { get; set; }
-
-        [JsonProperty("start")]
-        public float Start { get; set; }
-
-        [JsonProperty("startTime")]
-        public List<int> StartTime { get; set; }
-    }
-
-    public class PezMoveYEvent
-    {
-        [JsonProperty("easingLeft")]
-        public double EasingLeft { get; set; }
-
-        [JsonProperty("easingRight")]
-        public double EasingRight { get; set; }
-
-        [JsonProperty("easingType")]
-        public int EasingType { get; set; }
-
-        [JsonProperty("end")]
-        public float End { get; set; }
-
-        [JsonProperty("endTime")]
-        public List<int> EndTime { get; set; }
-
-        [JsonProperty("linkgroup")]
-        public int Linkgroup { get; set; }
-
-        [JsonProperty("start")]
-        public float Start { get; set; }
-
-        [JsonProperty("startTime")]
-        public List<int> StartTime { get; set; }
-    }
-
     public class PezNote
     {
         [JsonProperty("above")]
@@ -380,50 +346,5 @@ namespace Klrohias.NFast.ChartLoader.Pez
                 XPosition = PositionX
             };
         }
-    }
-
-    public class PezRotateEvent
-    {
-        [JsonProperty("easingLeft")]
-        public double EasingLeft { get; set; }
-
-        [JsonProperty("easingRight")]
-        public double EasingRight { get; set; }
-
-        [JsonProperty("easingType")]
-        public int EasingType { get; set; }
-
-        [JsonProperty("end")]
-        public double End { get; set; }
-
-        [JsonProperty("endTime")]
-        public List<int> EndTime { get; set; }
-
-        [JsonProperty("linkgroup")]
-        public int Linkgroup { get; set; }
-
-        [JsonProperty("start")]
-        public double Start { get; set; }
-
-        [JsonProperty("startTime")]
-        public List<int> StartTime { get; set; }
-    }
-
-    public class PezSpeedEvent
-    {
-        [JsonProperty("end")]
-        public double End { get; set; }
-
-        [JsonProperty("endTime")]
-        public List<int> EndTime { get; set; }
-
-        [JsonProperty("linkgroup")]
-        public int Linkgroup { get; set; }
-
-        [JsonProperty("start")]
-        public double Start { get; set; }
-
-        [JsonProperty("startTime")]
-        public List<int> StartTime { get; set; }
     }
 }

@@ -4,14 +4,11 @@ using UnityEngine;
 
 namespace Klrohias.NFast.GamePlay
 {
-    /// <summary>
-    /// High precision relative time timer
-    /// </summary>
     public class SystemTimer
     {
         private float offset = 0f;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
-        private long freq = 0, start = 0;
+        private readonly long freq = 0;
         // p/invokes
         [DllImport("kernel32.dll")]
         private static extern bool QueryPerformanceCounter(
@@ -22,7 +19,6 @@ namespace Klrohias.NFast.GamePlay
         public SystemTimer()
         {
             if (!QueryPerformanceFrequency(out freq)) throw new Exception("failed to query freq");
-            start = queryCounter();
         }
 
         private long queryCounter()
@@ -31,21 +27,19 @@ namespace Klrohias.NFast.GamePlay
             return counter;
         }
 
-        private float rawTime
-        {
-            get
-            {
-                var end = queryCounter();
-                return (float)(end - start) / freq * 1000f;
-            }
-        }
+        private float rawTime => (float)(queryCounter()) / freq * 1000f;
 
 #else
         private float rawTime => Convert.ToSingle(AudioSettings.dspTime);
 #endif
+        private float startTime = 0f;
         private bool paused = false;
         private float pauseStart = 0;
-        public float Time => rawTime - offset;
+        public float Time => rawTime - startTime - offset;
+        public void Reset()
+        {
+            startTime = rawTime;
+        }
         public void Pause()
         {
             if (paused) throw new InvalidOperationException("Timer is already paused");

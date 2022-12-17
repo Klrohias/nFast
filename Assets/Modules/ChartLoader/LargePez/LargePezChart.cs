@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.SharpZipLib.Zip;
+using Klrohias.NFast.ChartLoader.NFast;
 
 namespace Klrohias.NFast.ChartLoader.LargePez
 {
@@ -29,6 +30,11 @@ namespace Klrohias.NFast.ChartLoader.LargePez
         }
 
         public IEnumerator<IList<ChartLine>> GetLines()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IEnumerator<KeyValuePair<ChartTimespan, float>> GetBpmEvents()
         {
             throw new System.NotImplementedException();
         }
