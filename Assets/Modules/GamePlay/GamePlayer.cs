@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Mime;
 using System.Threading.Tasks;
 using Klrohias.NFast.ChartLoader;
 using Klrohias.NFast.ChartLoader.Pez;
@@ -92,7 +91,7 @@ public class GamePlayer : MonoBehaviour
     Vector3 ScaleVector3(Vector3 inputVector3) =>
         new(inputVector3.x * scaleFactor, inputVector3.y * scaleFactor, inputVector3.z);
 
-    float ToGameXPos(float x) => (x / gameVirtualResolution.Width) * (gameViewport / 2) * scaleFactor;
+    float ToGameXPos(float x) => (x / gameVirtualResolution.Width) * (gameViewport / 2) * scaleFactor * ASPECT_RATIO;
     float ToGameYPos(float x) => (x / gameVirtualResolution.Height) * (gameViewport / 2) * scaleFactor;
     void SetupScreenScale()
     {
@@ -319,17 +318,20 @@ public class GamePlayer : MonoBehaviour
         {
             eventsChunksBegin = 0;
         }
+
         requireNewEventsChunk = true;
     }
 
-    private void DoLineEvent(LineEvent lineEvent)
+    private void DoLineEvent(LineEvent lineEvent, float beat)
     {
         var last = lineEvent.EndTime.Beats - lineEvent.BeginTime.Beats;
-        var easing = EasingFunctions.Invoke(
-            lineEvent.EasingFunc,
-            (currentBeats - lineEvent.BeginTime.Beats) / last, lineEvent.EasingFuncRange.Low,
+        var easingX = (beat - lineEvent.BeginTime.Beats) / last;
+        easingX = Mathf.Clamp(easingX, 0, 1);
+        var easingY = EasingFunctions.Invoke(
+            lineEvent.EasingFunc, easingX
+            , lineEvent.EasingFuncRange.Low,
             lineEvent.EasingFuncRange.High);
-        var value = lineEvent.BeginValue + (lineEvent.EndValue - lineEvent.BeginValue) * easing;
+        var value = lineEvent.BeginValue + (lineEvent.EndValue - lineEvent.BeginValue) * easingY;
 
         switch (lineEvent.Type)
         {
@@ -371,18 +373,19 @@ public class GamePlayer : MonoBehaviour
                 throw new ArgumentOutOfRangeException();
         }
     }
+
     private void ProcessLineEvents()
     {
         for (int i = 0; i < runningEvents.Length; i++)
         {
             var item = runningEvents[i];
+            if (item.BeginTime.Beats > currentBeats) continue;
             if (currentBeats > item.EndTime.Beats)
             {
                 runningEvents.RemoveAt(i);
-                continue;
             }
-            if(item.BeginTime.Beats > currentBeats) continue;
-            DoLineEvent(item);
+
+            DoLineEvent(item, currentBeats);
         }
     }
     private void GameTick()

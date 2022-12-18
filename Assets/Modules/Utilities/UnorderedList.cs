@@ -13,12 +13,20 @@ namespace Klrohias.NFast.Utilities
             get => Items[index];
             set => Items[index] = value;
         }
+
         private void Realloc(int size)
         {
             var newItems = new T[size];
             Array.Copy(Items, 0, newItems, 0, length);
             Items = newItems;
         }
+
+        public void Add(T item)
+        {
+            Items[length] = item;
+            length++;
+        }
+
         public void AddRange(IList<T> itemList)
         {
             if (Items.Length - length < itemList.Count)
@@ -26,8 +34,10 @@ namespace Klrohias.NFast.Utilities
                 Realloc(Math.Max((int) (Items.Length * 1.5f), length + itemList.Count));
             }
 
-            itemList.CopyTo(Items, length);
-            length += itemList.Count;
+            foreach (var item in itemList)
+            {
+                Add(item);
+            }
         }
 
         public void RemoveAt(int index)
