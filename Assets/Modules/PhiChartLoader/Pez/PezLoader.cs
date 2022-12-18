@@ -9,7 +9,7 @@ using ICSharpCode.SharpZipLib.Zip;
 using UnityEngine;
 using Newtonsoft.Json;
 
-namespace Klrohias.NFast.ChartLoader.Pez
+namespace Klrohias.NFast.PhiChartLoader.Pez
 {
     public class PezLoader
     {

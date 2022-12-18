@@ -4,16 +4,16 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
-using Klrohias.NFast.ChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader.NFast;
 using Newtonsoft.Json;
 
-namespace Klrohias.NFast.ChartLoader.Pez
+namespace Klrohias.NFast.PhiChartLoader.Pez
 {
-    public class PezChart : IChart
+    public class PezChart : IPhiChart
     {
         internal ZipFile zipFile = null;
         internal Dictionary<string, ZipEntry> files = null;
-        private NFastChart nFastChart = null;
+        private NFastPhiChart nFastChart = null;
         public ChartMetadata Metadata => nFastChart.Metadata;
         public IEnumerator<IList<ChartNote>> GetNotes()
         {
@@ -48,7 +48,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
         {
             nFastChart = ToNFastChart();
         }
-        private NFastChart ToNFastChart()
+        private NFastPhiChart ToNFastChart()
         {
             // convert bpm events
             var bpmEvents = BpmEvents.Select(x => x.ToNFastEvent())
@@ -90,7 +90,7 @@ namespace Klrohias.NFast.ChartLoader.Pez
             }
             
             // generate nfast chart
-            var chart = new NFastChart()
+            var chart = new NFastPhiChart()
             {
                 Metadata = PezMetadata.ToNFastMetadata(),
                 Notes = notesArray,

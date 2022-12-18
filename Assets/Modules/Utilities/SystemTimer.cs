@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-namespace Klrohias.NFast.GamePlay
+namespace Klrohias.NFast.Utilities
 {
     public class SystemTimer
     {

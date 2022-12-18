@@ -6,11 +6,12 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
-using Klrohias.NFast.ChartLoader.NFast;
-using Klrohias.NFast.ChartLoader.Pez;
+using Klrohias.NFast.Json;
+using Klrohias.NFast.PhiChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader.Pez;
 using Debug = UnityEngine.Debug;
 
-namespace Klrohias.NFast.ChartLoader.LargePez
+namespace Klrohias.NFast.PhiChartLoader.LargePez
 {
     public class LargePezLoader
     {

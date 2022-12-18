@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 
-namespace Klrohias.NFast.ChartLoader.LargePez
+namespace Klrohias.NFast.Json
 {
     public class JsonWalker
     {

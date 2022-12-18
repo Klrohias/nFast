@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Klrohias.NFast.ChartLoader.LargePez
+namespace Klrohias.NFast.Utilities
 {
     public class UnbufferedStreamReader : TextReader
     {

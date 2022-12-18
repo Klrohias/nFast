@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Klrohias.NFast.Navigation;
+using Klrohias.NFast.PhiGamePlay;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,12 +25,12 @@ namespace Klrohias.NFast.UIControllers
         {
             TestButton.onClick.AddListener(() =>
             {
-                NavigationService.Get().ExtraData = new GamePlayer.GameStartInfo()
+                NavigationService.Get().ExtraData = new PhiGamePlayer.GameStartInfo()
                 {
                     Path = "H:/testchart.pez",
                     UseLargeChart = false
                 };
-                NavigationService.Get().LoadScene("Scenes/PlayScene");
+                NavigationService.Get().LoadScene("Scenes/PhiPlayScene");
             });
             RefreshTabItems();
             for (var i = 0; i < TabItems.Count; i++)

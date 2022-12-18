@@ -1,11 +1,11 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Klrohias.NFast.Utilities;
 
 
-namespace Klrohias.NFast.ChartLoader.LargePez
+namespace Klrohias.NFast.Json
 {
     public class JsonTokenizer
     {

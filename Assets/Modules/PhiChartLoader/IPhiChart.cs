@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using Klrohias.NFast.ChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader.NFast;
 
-namespace Klrohias.NFast.ChartLoader
+namespace Klrohias.NFast.PhiChartLoader
 {
-    public interface IChart
+    public interface IPhiChart
     {
         public ChartMetadata Metadata { get; }
         public IEnumerator<IList<ChartNote>> GetNotes();

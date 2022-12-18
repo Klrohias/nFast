@@ -1,7 +1,7 @@
 ﻿using System;
-using Klrohias.NFast.ChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader.NFast;
 
-namespace Klrohias.NFast.GamePlay
+namespace Klrohias.NFast.Utilities
 {
     public static class EasingFunctions
     {

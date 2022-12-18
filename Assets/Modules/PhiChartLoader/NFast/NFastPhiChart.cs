@@ -2,12 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Klrohias.NFast.ChartLoader;
+using Klrohias.NFast.PhiChartLoader;
 using UnityEngine;
 
-namespace Klrohias.NFast.ChartLoader.NFast
+namespace Klrohias.NFast.PhiChartLoader.NFast
 {
-    public class NFastChart : IChart
+    public class NFastPhiChart : IPhiChart
     {
         public ChartMetadata Metadata { get; set; }
         public ChartNote[] Notes { get; set; }

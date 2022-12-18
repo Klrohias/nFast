@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.SharpZipLib.Zip;
-using Klrohias.NFast.ChartLoader.NFast;
+using Klrohias.NFast.Json;
+using Klrohias.NFast.PhiChartLoader.NFast;
 
-namespace Klrohias.NFast.ChartLoader.LargePez
+namespace Klrohias.NFast.PhiChartLoader.LargePez
 {
-    public class LargePezChart : IChart
+    public class LargePezChart : IPhiChart
     {
         internal ZipFile zipFile = null;
         internal Dictionary<string, ZipEntry> files = null;
