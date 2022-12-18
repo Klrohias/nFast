@@ -16,6 +16,7 @@ using Klrohias.NFast.GamePlay;
 using Klrohias.NFast.Native;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
+using EventType = Klrohias.NFast.ChartLoader.NFast.EventType;
 
 public class GamePlayer : MonoBehaviour
 {
@@ -32,12 +33,14 @@ public class GamePlayer : MonoBehaviour
     private IEnumerator<KeyValuePair<ChartTimespan, float>> bpmEventGenerator;
 
     // events
-    private List<LineEvent> runningEvents = new List<LineEvent>();
+    private UnorderedList<LineEvent> runningEvents = new UnorderedList<LineEvent>();
     
 
     // screen adaption
     private const float ASPECT_RATIO = 16f / 9f;
     private float scaleFactor = 1f;
+    private (float Width, float Height) gameVirtualResolution = (625f, 440f);
+    private float gameViewport = 10f;
 
     // unity resources
     public Transform BackgroundTransform;
@@ -88,6 +91,9 @@ public class GamePlayer : MonoBehaviour
     Vector2 ScaleVector2(Vector2 inputVector2) => inputVector2 * scaleFactor;
     Vector3 ScaleVector3(Vector3 inputVector3) =>
         new(inputVector3.x * scaleFactor, inputVector3.y * scaleFactor, inputVector3.z);
+
+    float ToGameXPos(float x) => (x / gameVirtualResolution.Width) * (gameViewport / 2) * scaleFactor;
+    float ToGameYPos(float x) => (x / gameVirtualResolution.Height) * (gameViewport / 2) * scaleFactor;
     void SetupScreenScale()
     {
         var safeArea = Screen.safeArea;
@@ -278,7 +284,7 @@ public class GamePlayer : MonoBehaviour
             requireNewNotesChunk = false;
         }
     }
-    private IList<LineEvent>[] eventsChunks = new IList<LineEvent>[4];
+    private IList<LineEvent>[] eventsChunks = new IList<LineEvent>[16];
     private int eventsChunksBegin = 0;
     private bool requireNewEventsChunk = false;
     private void EventsProducer()
@@ -302,6 +308,7 @@ public class GamePlayer : MonoBehaviour
         // add new line events
         // TODO: don't use List<> for runningEvents
         // wait for thread
+        if(eventsChunks[eventsChunksBegin] == null) Debug.Log("Cannot keep up");
         while (eventsChunks[eventsChunksBegin] == null)
         {
         }
@@ -315,9 +322,68 @@ public class GamePlayer : MonoBehaviour
         requireNewEventsChunk = true;
     }
 
+    private void DoLineEvent(LineEvent lineEvent)
+    {
+        var last = lineEvent.EndTime.Beats - lineEvent.BeginTime.Beats;
+        var easing = EasingFunctions.Invoke(
+            lineEvent.EasingFunc,
+            (currentBeats - lineEvent.BeginTime.Beats) / last, lineEvent.EasingFuncRange.Low,
+            lineEvent.EasingFuncRange.High);
+        var value = lineEvent.BeginValue + (lineEvent.EndValue - lineEvent.BeginValue) * easing;
+
+        switch (lineEvent.Type)
+        {
+            case EventType.Alpha:
+            {
+                var renderer = lineObjects[(int) lineEvent.LineId].GetComponent<SpriteRenderer>();
+                var color = renderer.color;
+                color.a = value / 255f;
+                renderer.color = color;
+                break;
+            }
+            case EventType.MoveX:
+            {
+                var transform = lineObjects[(int)lineEvent.LineId].transform;
+                var pos = transform.position;
+                pos.x = ToGameXPos(value);
+                transform.position = pos; 
+                break;
+            }
+            case EventType.MoveY:
+            {
+                var transform = lineObjects[(int)lineEvent.LineId].transform;
+                var pos = transform.position;
+                pos.y = ToGameYPos(value);
+                transform.position = pos;
+                break;
+            }
+            case EventType.Rotate:
+            {
+                var transform = lineObjects[(int)lineEvent.LineId].transform;
+                transform.rotation = Quaternion.Euler(0, 0, -value);
+                break;
+            }
+            case EventType.Speed:
+                break;
+            case EventType.Incline:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
     private void ProcessLineEvents()
     {
-
+        for (int i = 0; i < runningEvents.Length; i++)
+        {
+            var item = runningEvents[i];
+            if (currentBeats > item.EndTime.Beats)
+            {
+                runningEvents.RemoveAt(i);
+                continue;
+            }
+            if(item.BeginTime.Beats > currentBeats) continue;
+            DoLineEvent(item);
+        }
     }
     private void GameTick()
     {
