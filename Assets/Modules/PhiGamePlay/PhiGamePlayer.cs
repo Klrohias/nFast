@@ -352,11 +352,13 @@ namespace Klrohias.NFast.PhiGamePlay
                 lineEvent.EasingFuncRange.High);
             var value = lineEvent.BeginValue + (lineEvent.EndValue - lineEvent.BeginValue) * easingY;
 
+            var lineObj = lineObjects[(int) lineEvent.LineId];
+
             switch (lineEvent.Type)
             {
                 case EventType.Alpha:
                 {
-                    var renderer = lineObjects[(int) lineEvent.LineId].GetComponent<SpriteRenderer>();
+                    var renderer = lineObj.GetComponent<PhiLineWrapper>().LineBody;
                     var color = renderer.color;
                     color.a = value / 255f;
                     renderer.color = color;
@@ -364,7 +366,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 }
                 case EventType.MoveX:
                 {
-                    var transform = lineObjects[(int) lineEvent.LineId].transform;
+                    var transform = lineObj.transform;
                     var pos = transform.position;
                     pos.x = ToGameXPos(value);
                     transform.position = pos;
@@ -372,7 +374,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 }
                 case EventType.MoveY:
                 {
-                    var transform = lineObjects[(int) lineEvent.LineId].transform;
+                    var transform = lineObj.transform;
                     var pos = transform.position;
                     pos.y = ToGameYPos(value);
                     transform.position = pos;
@@ -380,7 +382,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 }
                 case EventType.Rotate:
                 {
-                    var transform = lineObjects[(int) lineEvent.LineId].transform;
+                    var transform = lineObj.transform;
                     transform.rotation = Quaternion.Euler(0, 0, -value);
                     break;
                 }
