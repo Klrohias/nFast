@@ -286,9 +286,10 @@ namespace Klrohias.NFast.PhiGamePlay
             requireNewEventsChunk = true;
         }
 
-        private IList<ChartNote>[] notesChunks = new IList<ChartNote>[4];
+        private IList<ChartNote>[] notesChunks = new IList<ChartNote>[16];
         private int notesChunksBegin = 0;
         private int notesAppearBeatIndex = 0;
+        public static int NotesAppearBeats = 4;
         private bool requireNewNotesChunk = false;
 
         private void NotesProducer()
@@ -310,7 +311,7 @@ namespace Klrohias.NFast.PhiGamePlay
             }
         }
 
-        private IList<LineEvent>[] eventsChunks = new IList<LineEvent>[16];
+        private IList<LineEvent>[] eventsChunks = new IList<LineEvent>[24];
         private int eventsChunksBegin = 0;
         private bool requireNewEventsChunk = false;
 
@@ -350,7 +351,7 @@ namespace Klrohias.NFast.PhiGamePlay
             }
 
             requireNewEventsChunk = true;
-            while (currentBeatCount + 4 > notesAppearBeatIndex)
+            while (currentBeatCount + NotesAppearBeats > notesAppearBeatIndex)
             {
                 LoadNewNotesChunk();
                 notesAppearBeatIndex++;
@@ -375,15 +376,17 @@ namespace Klrohias.NFast.PhiGamePlay
 
             foreach (var note in noteChunk)
             {
-                var viewport = lineObjects[(int)note.LineId].GetComponent<PhiLineWrapper>().UpNoteViewport;
+                var line = lineObjects[(int) note.LineId].GetComponent<PhiLineWrapper>();
+                var viewport = line.UpNoteViewport;
                 var noteObj = notePool.RequestObject();
                 noteObj.transform.parent = viewport;
                 noteObj.SetActive(true);
                 var noteWrapper = noteObj.GetComponent<PhiNoteWrapper>();
-                noteWrapper.NoteStart(note);
+                noteWrapper.NoteStart(note, line);
 
                 var localPos = transform.localPosition;
                 localPos.x = ToGameXPos(note.XPosition);
+                localPos.y = FindYPos(note);
                 noteObj.transform.localPosition = localPos;
             }
         }
@@ -391,6 +394,59 @@ namespace Klrohias.NFast.PhiGamePlay
         public void OnNoteFinalize(PhiNoteWrapper note)
         {
             notePool.ReturnObject(note.gameObject);
+        }
+        
+        private float FindYPos(ChartNote note)
+        {
+            // A poo of code :)
+            var targetBeats = note.StartTime.Beats;
+
+            ChartLine.SpeedSegment? beginSegment = null, endSegment = null;
+            var offset = 0f;
+            foreach (var speedSegment in lines[(int) note.LineId].SpeedSegments)
+            {
+                if (CurrentBeats >= speedSegment.BeginTime.Beats && CurrentBeats <= speedSegment.EndTime.Beats)
+                {
+                    beginSegment = speedSegment;
+                }
+
+                if (beginSegment != null)
+                {
+                    var deltaBeats = speedSegment.EndTime.Beats - speedSegment.BeginTime.Beats;
+                    if (speedSegment.IsStatic)
+                        offset += deltaBeats * speedSegment.BeginValue;
+                    else
+                        offset += speedSegment.BeginValue * deltaBeats +
+                                  (speedSegment.EndValue - speedSegment.BeginValue) * deltaBeats / 2;
+                }
+                if (targetBeats >= speedSegment.BeginTime.Beats && targetBeats <= speedSegment.EndTime.Beats)
+                {
+                    endSegment = speedSegment;
+                }
+
+                if (endSegment != null && beginSegment != null) break;
+            }
+
+            var sliceBeats = CurrentBeats - beginSegment.Value.BeginTime.Beats;
+
+            if (beginSegment.Value.IsStatic)
+                offset -= sliceBeats * beginSegment.Value.BeginValue;
+            else
+                offset -= sliceBeats * beginSegment.Value.BeginValue +
+                          sliceBeats * (beginSegment.Value.EndValue - beginSegment.Value.BeginValue) / 2;
+
+            sliceBeats = endSegment.Value.EndTime.Beats - targetBeats;
+            if(endSegment.Value.IsStatic) offset -= sliceBeats * endSegment.Value.BeginValue;
+            else
+            {
+                var speedZero = (endSegment.Value.EndValue - endSegment.Value.BeginValue) *
+                                ((targetBeats - endSegment.Value.BeginTime.Beats) / (endSegment.Value.EndTime.Beats -
+                                    endSegment.Value.BeginTime.Beats));
+                offset -= (speedZero + endSegment.Value.EndValue - endSegment.Value.BeginValue) * sliceBeats / 2;
+            }
+
+
+            return offset;
         }
 
         private void DoLineEvent(LineEvent lineEvent, float beat)

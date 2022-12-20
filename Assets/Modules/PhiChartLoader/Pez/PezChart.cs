@@ -77,6 +77,9 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 events.CopyTo(eventsArray, eventIndex);
                 eventIndex += events.Length;
 
+                // make speed cache
+                line.ToSpeedSegment(events.Where(x => x.Type == EventType.Speed).OrderBy(x => x.BeginTime.Beats));
+
                 // cast notes
                 if (judgeLine.Notes != null)
                 {

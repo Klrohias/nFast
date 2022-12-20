@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Klrohias.NFast.PhiChartLoader;
+using Klrohias.NFast.Utilities;
 using UnityEngine;
 
 namespace Klrohias.NFast.PhiChartLoader.NFast
@@ -113,6 +114,54 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
     public class ChartLine
     {
         public uint LineId { get; set; } = 0;
+        internal void ToSpeedSegment(IEnumerable<LineEvent> events)
+        {
+            var lastBeats = 0f;
+            var lastSpeed = 0f;
+            var result = new List<SpeedSegment>();
+            var isFirst = true;
+            foreach (var lineEvent in events)
+            {
+                if (!isFirst)
+                {
+                    result.Add(new()
+                    {
+                        BeginTime = new(lastBeats),
+                        EndTime = lineEvent.BeginTime,
+                        EndValue = lastSpeed,
+                        BeginValue = lastSpeed,
+                        IsStatic = true
+                    });
+                }
+
+                if (lineEvent.BeginTime.Beats != lineEvent.EndTime.Beats)
+                {
+                    result.Add(new()
+                    {
+                        BeginTime = lineEvent.BeginTime,
+                        EndTime = lineEvent.EndTime,
+                        BeginValue = lineEvent.BeginValue,
+                        EndValue = lineEvent.EndValue,
+                        IsStatic = false
+                    });
+                }
+
+                lastBeats = lineEvent.EndTime.Beats;
+                lastSpeed = lineEvent.EndValue;
+                isFirst = false;
+            }
+
+            SpeedSegments = result.ToArray();
+        }
+        internal struct SpeedSegment
+        {
+            public ChartTimespan BeginTime;
+            public ChartTimespan EndTime;
+            public float BeginValue;
+            public float EndValue;
+            public bool IsStatic;
+        }
+        internal SpeedSegment[] SpeedSegments;
     }
 
     public enum EventType
@@ -204,5 +253,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         {
             Beats = beats;
         }
+
+        public override string ToString() => Beats.ToString();
     }
 }

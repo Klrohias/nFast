@@ -27,7 +27,7 @@ namespace Klrohias.NFast.UIControllers
             {
                 NavigationService.Get().ExtraData = new PhiGamePlayer.GameStartInfo()
                 {
-                    Path = "H:/testchart.pez",
+                    Path = "H:/testchart1.pez",
                     UseLargeChart = false
                 };
                 NavigationService.Get().LoadScene("Scenes/PhiPlayScene");

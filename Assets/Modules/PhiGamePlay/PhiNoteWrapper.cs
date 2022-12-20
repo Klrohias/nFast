@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Codice.CM.Common;
 using Klrohias.NFast.PhiChartLoader.NFast;
 using UnityEngine;
 
@@ -10,12 +11,19 @@ namespace Klrohias.NFast.PhiGamePlay
         private bool isRunning = false;
         public PhiGamePlayer Player;
         private ChartNote note;
-        private Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
-        public void NoteStart(ChartNote note)
+        private static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
+        private float lastBeats = 0f;
+        private float lastSpeed = 0f;
+        private PhiLineWrapper line;
+
+        public void NoteStart(ChartNote note, PhiLineWrapper line)
         {
             isRunning = true;
             this.note = note;
-            transform.rotation = ZeroRotation;
+            this.line = line;
+            this.lastBeats = Player.CurrentBeats;
+            this.lastSpeed = line.Speed;
+            transform.localRotation = ZeroRotation;
         }
 
         void Update()
@@ -29,7 +37,11 @@ namespace Klrohias.NFast.PhiGamePlay
             }
 
             var localPos = transform.localPosition;
-            localPos.y = (note.StartTime.Beats - Player.CurrentBeats) * 6f;
+            var deltaBeats = Player.CurrentBeats - lastBeats;
+            var deltaSpeed = line.Speed - lastSpeed;
+            localPos.y -= lastSpeed * deltaBeats + deltaSpeed * deltaBeats / 2f;
+            this.lastBeats = Player.CurrentBeats;
+            this.lastSpeed = line.Speed;
             transform.localPosition = localPos;
         }
     }
