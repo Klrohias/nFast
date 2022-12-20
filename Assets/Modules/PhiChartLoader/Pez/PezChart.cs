@@ -272,7 +272,12 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
             }
             if (SpeedEvents != null)
             {
-                result.AddRange(SpeedEvents.Select(x => x.ToNFastEvent(lineId, EventType.Speed)));
+                result.AddRange(SpeedEvents.Select(x => { 
+                    var lineEvent = x.ToNFastEvent(lineId, EventType.Speed);
+                    lineEvent.EasingFuncRange = (0, 1f);
+                    lineEvent.EasingFunc = EasingFunction.Linear;
+                    return lineEvent;
+                }));
             }
             return result;
         }
