@@ -21,16 +21,16 @@ namespace Klrohias.NFast.Utilities
 
             for (int i = 0; i < c; i++)
             {
-                requestNewObject();
+                RequestNewObject();
             }
         }
 
-        private void requestNewObject()
+        private void RequestNewObject()
         {
             var obj = OnRequestNewObject();
             obj.SetActive(false);
             objects.Add(obj);
-            if (objects.Count / 8 > lendObjectBitmap.Length)
+            if (objects.Count / 8 >= lendObjectBitmap.Length)
             {
                 var newLendObjectBitmap = new byte[lendObjectBitmap.Length + 2];
                 lendObjectBitmap.CopyTo(newLendObjectBitmap, 0);
@@ -50,7 +50,7 @@ namespace Klrohias.NFast.Utilities
 
             if (i == lendObjectBitmap.Length)
             {
-                requestNewObject();
+                RequestNewObject();
             }
 
             int k = 0;
@@ -62,7 +62,7 @@ namespace Klrohias.NFast.Utilities
             var index = i * 8 + k;
             if (index >= objects.Count)
             {
-                requestNewObject();
+                RequestNewObject();
             }
             var result = objects[index];
             lendObjectBitmap[i] |= (byte) (0b1 << k);

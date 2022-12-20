@@ -22,12 +22,12 @@ namespace Klrohias.NFast.PhiGamePlay
     public class PhiGamePlayer : MonoBehaviour
     {
         private bool gameRunning = false;
-        private SystemTimer timer = null;
+        public SystemTimer Timer { get; private set; } = null;
 
         // game running
         private int currentBeatCount = 0;
         private int lastBeatCount = -1;
-        private float currentBeats = 0f;
+        public float CurrentBeats { get; private set; } = 0f;
         private KeyValuePair<ChartTimespan, float> nextBpmEvent;
         private float currentBpm = 0f;
         private float beatLast = 0f;
@@ -35,7 +35,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         // events
         private UnorderedList<LineEvent> runningEvents = new UnorderedList<LineEvent>();
-
+        
 
         // screen adaption
         private const float ASPECT_RATIO = 16f / 9f;
@@ -47,6 +47,8 @@ namespace Klrohias.NFast.PhiGamePlay
         public Transform BackgroundTransform;
         public SpriteRenderer[] BackgroundImages;
         public GameObject JudgeLinePrefab;
+        public GameObject NotePrefab;
+        public GameObject HoldNotePrefab;
         private Texture2D coverTexture = null;
         private AudioClip audioClip = null;
 
@@ -54,6 +56,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private ObjectPool linePool;
         private ObjectPool notePool;
         private ObjectPool holdNotePool;
+        private UnorderedList<ChartNote> runningNotes = new UnorderedList<ChartNote>();
 
         // chart data
         private IPhiChart chart;
@@ -248,22 +251,22 @@ namespace Klrohias.NFast.PhiGamePlay
                 return obj;
             }, 5);
 
+            notePool = new(() =>
+            {
+                var obj = Instantiate(NotePrefab);
+                obj.name += " [Pooled]";
+                obj.GetComponent<PhiNoteWrapper>().Player = this;
+                return obj;
+            }, 5);
+
             // start timer
-            timer = new SystemTimer();
-            timer.Reset();
+            Timer = new SystemTimer();
+            Timer.Reset();
 
             // get first bpm event
             bpmEventGenerator = chart.GetBpmEvents();
             bpmEventGenerator.MoveNext();
             nextBpmEvent = bpmEventGenerator.Current;
-
-            // enable services and threads
-            mainTouchService.enabled = true;
-            gameRunning = true;
-            Threading.RunNewThread(NotesProducer);
-            Threading.RunNewThread(EventsProducer);
-            requireNewNotesChunk = true;
-            requireNewEventsChunk = true;
 
             // generate lines
             lines = chart.GetLines();
@@ -273,10 +276,19 @@ namespace Klrohias.NFast.PhiGamePlay
                 lineObjects.Add(obj);
                 obj.SetActive(true);
             }
+
+            // enable services and threads
+            mainTouchService.enabled = true;
+            gameRunning = true;
+            Threading.RunNewThread(NotesProducer);
+            Threading.RunNewThread(EventsProducer);
+            requireNewNotesChunk = true;
+            requireNewEventsChunk = true;
         }
 
         private IList<ChartNote>[] notesChunks = new IList<ChartNote>[4];
         private int notesChunksBegin = 0;
+        private int notesAppearBeatIndex = 0;
         private bool requireNewNotesChunk = false;
 
         private void NotesProducer()
@@ -323,9 +335,8 @@ namespace Klrohias.NFast.PhiGamePlay
         private void BeatUpdate()
         {
             // add new line events
-            // TODO: don't use List<> for runningEvents
             // wait for thread
-            if (eventsChunks[eventsChunksBegin] == null) Debug.Log("Cannot keep up");
+            if (eventsChunks[eventsChunksBegin] == null) Debug.Log("Cannot keep up: EventsProducer");
             while (eventsChunks[eventsChunksBegin] == null)
             {
             }
@@ -339,6 +350,47 @@ namespace Klrohias.NFast.PhiGamePlay
             }
 
             requireNewEventsChunk = true;
+            while (currentBeatCount + 4 > notesAppearBeatIndex)
+            {
+                LoadNewNotesChunk();
+                notesAppearBeatIndex++;
+            }
+        }
+
+        private void LoadNewNotesChunk()
+        {
+            if (notesChunks[notesChunksBegin] == null) Debug.Log("Cannot keep up: NotesProducer");
+            while (notesChunks[notesChunksBegin] == null)
+            {
+            }
+
+            var noteChunk = notesChunks[notesChunksBegin];
+            notesChunks[notesChunksBegin] = null;
+            requireNewNotesChunk = true;
+            notesChunksBegin++;
+            if (notesChunksBegin >= notesChunks.Length)
+            {
+                notesChunksBegin = 0;
+            }
+
+            foreach (var note in noteChunk)
+            {
+                var viewport = lineObjects[(int)note.LineId].GetComponent<PhiLineWrapper>().UpNoteViewport;
+                var noteObj = notePool.RequestObject();
+                noteObj.transform.parent = viewport;
+                noteObj.SetActive(true);
+                var noteWrapper = noteObj.GetComponent<PhiNoteWrapper>();
+                noteWrapper.NoteStart(note);
+
+                var localPos = transform.localPosition;
+                localPos.x = ToGameXPos(note.XPosition);
+                noteObj.transform.localPosition = localPos;
+            }
+        }
+
+        public void OnNoteFinalize(PhiNoteWrapper note)
+        {
+            notePool.ReturnObject(note.gameObject);
         }
 
         private void DoLineEvent(LineEvent lineEvent, float beat)
@@ -352,7 +404,9 @@ namespace Klrohias.NFast.PhiGamePlay
                 lineEvent.EasingFuncRange.High);
             var value = lineEvent.BeginValue + (lineEvent.EndValue - lineEvent.BeginValue) * easingY;
 
-            var lineObj = lineObjects[(int) lineEvent.LineId];
+            var lineId = (int) lineEvent.LineId;
+            var lineObj = lineObjects[lineId];
+
 
             switch (lineEvent.Type)
             {
@@ -387,7 +441,11 @@ namespace Klrohias.NFast.PhiGamePlay
                     break;
                 }
                 case EventType.Speed:
+                {
+                    var wrapper = lineObj.GetComponent<PhiLineWrapper>();
+                    wrapper.Speed = value;
                     break;
+                }
                 case EventType.Incline:
                     break;
                 default:
@@ -400,20 +458,20 @@ namespace Klrohias.NFast.PhiGamePlay
             for (int i = 0; i < runningEvents.Length; i++)
             {
                 var item = runningEvents[i];
-                if (item.BeginTime.Beats > currentBeats) continue;
-                if (currentBeats > item.EndTime.Beats)
+                if (item.BeginTime.Beats > CurrentBeats) continue;
+                if (CurrentBeats > item.EndTime.Beats)
                 {
                     runningEvents.RemoveAt(i);
                 }
 
-                DoLineEvent(item, currentBeats);
+                DoLineEvent(item, CurrentBeats);
             }
         }
 
         private void GameTick()
         {
-            if (currentBpm != 0f) currentBeats = timer.Time / 1000f / beatLast;
-            if (nextBpmEvent.Key.Beats <= currentBeats)
+            if (currentBpm != 0f) CurrentBeats = Timer.Time / 1000f / beatLast;
+            if (nextBpmEvent.Key.Beats <= CurrentBeats)
             {
                 currentBpm = nextBpmEvent.Value;
                 nextBpmEvent = bpmEventGenerator.MoveNext()
@@ -422,7 +480,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 beatLast = 60f / currentBpm;
             }
 
-            currentBeatCount = (int) currentBeats;
+            currentBeatCount = (int) CurrentBeats;
             if (currentBeatCount > lastBeatCount)
             {
                 for (int i = 0; i < currentBeatCount - lastBeatCount; i++)

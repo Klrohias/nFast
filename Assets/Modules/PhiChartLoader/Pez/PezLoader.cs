@@ -16,7 +16,7 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
         internal const string PEZ_INFO = "info.txt";
         internal static Regex chartLocate = new Regex("Chart:([0-9a-zA-Z ._]+)");
 
-        internal static IEnumerable<ZipEntry> readZipEntries(ZipFile zipfile)
+        internal static IEnumerable<ZipEntry> ReadZipEntries(ZipFile zipfile)
         {
             foreach (ZipEntry zipEntry in zipfile)
             {
@@ -29,7 +29,7 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
             // firstly, open zip
             var zipFile = new ZipFile(path);
 
-            var files = readZipEntries(zipFile).Take(6).ToDictionary(x => x.Name);
+            var files = ReadZipEntries(zipFile).Take(6).ToDictionary(x => x.Name);
             
             // read info.txt
             if (!files.ContainsKey(PEZ_INFO))

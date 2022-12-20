@@ -60,7 +60,7 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
             var notesArray = new ChartNote[countOfNotes];
             var linesArray = new ChartLine[JudgeLineList.Count];
-            var countOfEvents = JudgeLineList.Sum(x => x.EventLayers.Sum(y => y.EventCount));
+            var countOfEvents = JudgeLineList.Sum(x => x.EventLayers?.Sum(y => y?.EventCount ?? 0) ?? 0);
             var eventsArray = new LineEvent[countOfEvents];
 
             uint lineId = 0;
@@ -72,7 +72,8 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 line.LineId = lineId;
 
                 // cast events
-                var events = judgeLine.EventLayers.SelectMany(x => x.ToNFastEvents(lineId)).ToArray();
+                var events = judgeLine.EventLayers.SelectMany(x => x?.ToNFastEvents(lineId) ?? new List<LineEvent>())
+                    .ToArray();
                 events.CopyTo(eventsArray, eventIndex);
                 eventIndex += events.Length;
 
@@ -364,7 +365,13 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 LineId = lineId,
                 EndTime = new ChartTimespan(EndTime),
                 StartTime = new ChartTimespan(StartTime),
-                XPosition = PositionX
+                XPosition = PositionX,
+                ReverseDirection = Above == 0,
+                IsFakeNote = IsFake == 1,
+                Type = Type switch
+                {
+                    _ => NoteType.Tap
+                }
             };
         }
     }

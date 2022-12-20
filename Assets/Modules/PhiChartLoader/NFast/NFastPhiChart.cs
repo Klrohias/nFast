@@ -92,12 +92,22 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         public string Composer { get; set; } = "";
     }
 
+    public enum NoteType
+    {
+        Tap,
+        Flick,
+        Hold,
+        Drag
+    }
     public class ChartNote
     {
+        public NoteType Type { get; set; } = NoteType.Tap;
         public ChartTimespan StartTime { get; set; } = ChartTimespan.Zero;
         public ChartTimespan EndTime { get; set; } = ChartTimespan.Zero;
         public float XPosition { get; set; } = 0f;
         public uint LineId { get; set; } = 0;
+        public bool ReverseDirection { get; set; } = false;
+        public bool IsFakeNote { get; set; } = false;
     }
 
     public class ChartLine

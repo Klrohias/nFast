@@ -20,7 +20,7 @@ namespace Klrohias.NFast.PhiChartLoader.LargePez
         {
             var zipFile = new ZipFile(path);
 
-            var files = PezLoader.readZipEntries(zipFile).Take(6).ToDictionary(x => x.Name);
+            var files = PezLoader.ReadZipEntries(zipFile).Take(6).ToDictionary(x => x.Name);
 
             // read info.txt
             if (!files.ContainsKey(PezLoader.PEZ_INFO))
