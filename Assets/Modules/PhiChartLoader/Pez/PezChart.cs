@@ -14,8 +14,9 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
         internal ZipFile zipFile = null;
         internal Dictionary<string, ZipEntry> files = null;
         private NFastPhiChart nFastChart = null;
+        public NFastPhiChart NFastPhiChart => nFastChart;
         public ChartMetadata Metadata => nFastChart.Metadata;
-        public IEnumerator<IList<ChartNote>> GetNotes()
+        public IList<ChartNote> GetNotes()
         {
             return nFastChart.GetNotes();
         }
@@ -78,7 +79,7 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 eventIndex += events.Length;
 
                 // make speed cache
-                line.ToSpeedSegment(events.Where(x => x.Type == EventType.Speed).OrderBy(x => x.BeginTime.Beats));
+                line.LoadSpeedSegments(events.Where(x => x.Type == EventType.Speed).OrderBy(x => x.BeginTime.Beats));
 
                 // cast notes
                 if (judgeLine.Notes != null)

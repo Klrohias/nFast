@@ -12,8 +12,6 @@ namespace Klrohias.NFast.PhiGamePlay
         public PhiGamePlayer Player;
         private ChartNote note;
         private static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
-        private float lastBeats = 0f;
-        private float lastSpeed = 0f;
         private PhiLineWrapper line;
 
         public void NoteStart(ChartNote note, PhiLineWrapper line)
@@ -21,8 +19,6 @@ namespace Klrohias.NFast.PhiGamePlay
             isRunning = true;
             this.note = note;
             this.line = line;
-            this.lastBeats = Player.CurrentBeats;
-            this.lastSpeed = line.Speed;
             transform.localRotation = ZeroRotation;
         }
 
@@ -33,15 +29,11 @@ namespace Klrohias.NFast.PhiGamePlay
             {
                 isRunning = false;
                 Player.OnNoteFinalize(this);
+                Debug.Log("note finalize");
                 return;
             }
-
             var localPos = transform.localPosition;
-            var deltaBeats = Player.CurrentBeats - lastBeats;
-            var deltaSpeed = line.Speed - lastSpeed;
-            localPos.y -= lastSpeed * deltaBeats + deltaSpeed * deltaBeats / 2f;
-            this.lastBeats = Player.CurrentBeats;
-            this.lastSpeed = line.Speed;
+            localPos.y = note.YPosition - line.Line.YPosition;
             transform.localPosition = localPos;
         }
     }

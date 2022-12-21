@@ -17,17 +17,9 @@ namespace Klrohias.NFast.PhiChartLoader.LargePez
         internal JsonWalker walker = null;
         internal ChartMetadata metadata;
         public ChartMetadata Metadata => metadata;
-        public IEnumerator<IList<ChartNote>> GetNotes()
+        public IList<ChartNote> GetNotes()
         {
-            uint beats = 0;
-            var processedNotes = 0;
-            var lastNotes = new List<ChartNote>();
-            while (processedNotes < noteCount)
-            {
-                if (!offsetMap.ContainsKey(beats)) yield return lastNotes;
-                lastNotes.AddRange(offsetMap[beats].Select(x => LargePezLoader.ExtractNote(this, x).ToNFastNote()));
-                yield return lastNotes;
-            }
+            return null;
         }
 
         public IEnumerator<IList<LineEvent>> GetEvents()
