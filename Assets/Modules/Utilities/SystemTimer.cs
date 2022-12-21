@@ -2,12 +2,17 @@
 using System.Runtime.InteropServices;
 using UnityEngine;
 
+
 namespace Klrohias.NFast.Utilities
 {
     public class SystemTimer
     {
         private float offset = 0f;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
+        // It is not recommend to enable system clock, because
+        // there is some problem with it.
+        // In some of frames, it give out same value, it make the FPS of notes low.
+#if ENABLE_SYSTEM_CLOCK
         private readonly long freq = 0;
         // p/invokes
         [DllImport("kernel32.dll")]
@@ -28,6 +33,9 @@ namespace Klrohias.NFast.Utilities
         }
 
         private float rawTime => (float)(queryCounter()) / freq * 1000f;
+#else
+        private float rawTime => UnityEngine.Time.realtimeSinceStartup * 1000f;
+#endif
 
 #else
         private float rawTime => Convert.ToSingle(AudioSettings.dspTime);

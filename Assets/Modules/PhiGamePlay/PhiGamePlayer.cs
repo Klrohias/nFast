@@ -33,7 +33,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private float beatLast = 0f;
         private IEnumerator<KeyValuePair<ChartTimespan, float>> bpmEventGenerator;
         private readonly ThreadDispatcher dispatcher = new ThreadDispatcher();
-        private Queue<NoteBeginInfo> readyToRunNotes = new Queue<NoteBeginInfo>();
+        private Queue<ChartNote> newNotes = new Queue<ChartNote>();
 
         // events
         private UnorderedList<LineEvent> runningEvents = new UnorderedList<LineEvent>();
@@ -58,7 +58,6 @@ namespace Klrohias.NFast.PhiGamePlay
         private ObjectPool linePool;
         private ObjectPool notePool;
         private ObjectPool holdNotePool;
-        private UnorderedList<ChartNote> runningNotes = new UnorderedList<ChartNote>();
 
         // chart data
         private IPhiChart chart;
@@ -74,12 +73,6 @@ namespace Klrohias.NFast.PhiGamePlay
             public bool UseLargeChart = false;
             public string Path = "";
         }
-        private struct NoteBeginInfo
-        {
-            public GameObject GameObject;
-            public ChartNote Note;
-        }
-
         async void Start()
         {
             // load chart file
@@ -306,11 +299,6 @@ namespace Klrohias.NFast.PhiGamePlay
             dispatcher.Dispatch(FetchNewEvents);
         }
 
-        private IList<ChartNote>[] notesChunks = new IList<ChartNote>[16];
-        private int notesChunksBegin = 0;
-        private int notesAppearBeatIndex = 0;
-        public static int NotesAppearBeats = 4;
-
         private IList<LineEvent>[] eventsChunks = new IList<LineEvent>[24];
         private int eventsChunksBegin = 0;
 
@@ -411,7 +399,8 @@ namespace Klrohias.NFast.PhiGamePlay
             for (int i = 0; i < lines.Count; i++)
             {
                 var line = lines[i];
-                line.YPosition = line.FindYPos(CurrentBeats);
+                var newYPos = line.FindYPos(CurrentBeats);
+                line.YPosition = newYPos;
             }
         }
 
@@ -422,9 +411,9 @@ namespace Klrohias.NFast.PhiGamePlay
                 var note = notes[i]; 
                 var yOffset = note.YPosition - lines[(int) note.LineId].YPosition;
                 note.Height = yOffset;
-                if (yOffset <= 80f && yOffset >= 0)
+                if (yOffset <= 25f && yOffset >= 0)
                 {
-                    readyToRunNotes.Enqueue(new NoteBeginInfo() {Note = note});
+                    newNotes.Enqueue(note);
                     (notes[i], notes[notesBegin]) = (notes[notesBegin], null);
                     notesBegin++;
                 }
@@ -445,7 +434,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 else eventsChunks[i] = eventsGenerator.Current;
             }
         }
-
+        
         private void GameTick()
         {
             if (currentBpm != 0f) CurrentBeats = Timer.Time / 1000f / beatLast;
@@ -477,12 +466,11 @@ namespace Klrohias.NFast.PhiGamePlay
         void Update()
         {
             if (gameRunning) GameTick();
-            lock (readyToRunNotes)
+            lock (newNotes)
             {
-                while (readyToRunNotes.Count > 0)
+                while (newNotes.Count > 0)
                 {
-                    var note = readyToRunNotes.Dequeue().Note;
-
+                    var note = newNotes.Dequeue();
                     var noteObj = note.NoteGameObject;
                     if (note.NoteGameObject == null)
                     {

@@ -29,11 +29,11 @@ namespace Klrohias.NFast.PhiGamePlay
             {
                 isRunning = false;
                 Player.OnNoteFinalize(this);
-                Debug.Log("note finalize");
                 return;
             }
             var localPos = transform.localPosition;
-            localPos.y = note.YPosition - line.Line.YPosition;
+            var newPosY = note.YPosition - line.Line.YPosition;
+            localPos.y = newPosY;
             transform.localPosition = localPos;
         }
     }
