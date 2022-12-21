@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Klrohias.NFast.PhiChartLoader;
 using Klrohias.NFast.Utilities;
+using PlasticPipe.PlasticProtocol.Messages;
 using UnityEngine;
 
 namespace Klrohias.NFast.PhiChartLoader.NFast
@@ -16,32 +19,9 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         public LineEvent[] LineEvents { get; set; }
         public List<KeyValuePair<ChartTimespan, float>> BpmEvents { get; set; }
 
-        public IEnumerator<IList<ChartNote>> GetNotes()
+        public IList<ChartNote> GetNotes()
         {
-            var notes = new ChartNote[Notes.Length];
-            Array.Copy(Notes, notes, Notes.Length);
-            int reduceIndex = 0;
-            int beats = 0;
-
-            while (reduceIndex < notes.Length)
-            {
-                var resultNotes = new List<ChartNote>(Math.Max(8, (notes.Length - reduceIndex) / 4));
-                for (int i = reduceIndex; i < notes.Length; i++)
-                {
-                    var note = notes[i];
-                    var startTime = Convert.ToInt32(MathF.Floor(note.StartTime.Beats));
-                    if (startTime == beats)
-                    {
-                        resultNotes.Add(note);
-                        notes[i] = notes[reduceIndex];
-                        notes[reduceIndex] = null;
-                        reduceIndex++;
-                    }
-                }
-
-                beats++;
-                yield return resultNotes;
-            }
+            return Notes;
         }
 
         public IEnumerator<IList<LineEvent>> GetEvents()
@@ -81,6 +61,48 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         {
             return BpmEvents.GetEnumerator();
         }
+
+        internal async Task GenerateInternals()
+        {
+            const int maxThreads = 2;
+            var threadTasks = new List<Task>();
+            if (Notes.Length < maxThreads)
+            {
+                threadTasks.Add(Async.RunOnThread(() =>
+                {
+                    foreach (var chartNote in Notes)
+                    {
+                        chartNote.GenerateInternals(Lines[chartNote.LineId]);
+                    }
+                }));
+            }
+            else
+            {
+                var ranges = new (int, int)[maxThreads];
+                var lastEnd = 0;
+                for (int i = 0; i < maxThreads; i++)
+                {
+                    var end = (int) ((float) Notes.Length / maxThreads * (i + 1));
+                    ranges[i] = (lastEnd, end);
+                    lastEnd = end;
+                }
+
+                foreach (var range in ranges)
+                {
+                    threadTasks.Add(Async.RunOnThread(() =>
+                    {
+                        for (int i = range.Item1; i < range.Item2; i++)
+                        {
+                            var note = Notes[i];
+                            var line = Lines[note.LineId];
+                            note.GenerateInternals(line);
+                        }
+                    }));
+                }
+            }
+
+            await Task.WhenAll(threadTasks);
+        }
     }
 
     public class ChartMetadata
@@ -109,12 +131,22 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         public uint LineId { get; set; } = 0;
         public bool ReverseDirection { get; set; } = false;
         public bool IsFakeNote { get; set; } = false;
+
+        internal GameObject NoteGameObject;
+        internal float Height = 0f;
+        internal float YPosition = 0f;
+        internal void GenerateInternals(ChartLine line)
+        {
+            YPosition = line.FindYPos(StartTime.Beats);
+        }
     }
 
     public class ChartLine
     {
         public uint LineId { get; set; } = 0;
-        internal void ToSpeedSegment(IEnumerable<LineEvent> events)
+
+        internal float YPosition = 0f;
+        internal void LoadSpeedSegments(IEnumerable<LineEvent> events)
         {
             var lastBeats = 0f;
             var lastSpeed = 0f;
@@ -151,6 +183,15 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
                 isFirst = false;
             }
 
+            // add end segment
+            result.Add(new ()
+            {
+                BeginTime = new(lastBeats),
+                EndTime = new(float.PositiveInfinity),
+                BeginValue = lastSpeed,
+                EndValue = lastSpeed,
+                IsStatic = true
+            });
             SpeedSegments = result.ToArray();
         }
         internal struct SpeedSegment
@@ -162,6 +203,43 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
             public bool IsStatic;
         }
         internal SpeedSegment[] SpeedSegments;
+        internal float FindYPos(float targetBeats)
+        {
+            // A poo of code :)
+            var endSegment = new SpeedSegment();
+            var segmentFound = false; 
+            var offset = 0f;
+            foreach (var speedSegment in SpeedSegments)
+            {
+                var deltaBeats = speedSegment.EndTime.Beats - speedSegment.BeginTime.Beats;
+                if (speedSegment.IsStatic)
+                    offset += deltaBeats * speedSegment.BeginValue;
+                else
+                    offset += speedSegment.BeginValue * deltaBeats +
+                              (speedSegment.EndValue - speedSegment.BeginValue) * deltaBeats / 2;
+
+                if (targetBeats >= speedSegment.BeginTime.Beats && targetBeats <= speedSegment.EndTime.Beats)
+                {
+                    endSegment = speedSegment;
+                    segmentFound = true;
+                    break;
+                }
+            }
+
+            if (!segmentFound) throw new IndexOutOfRangeException($"Segment not found by {targetBeats}");
+
+            var sliceBeats = endSegment.EndTime.Beats - targetBeats;
+            if (endSegment.IsStatic) offset -= sliceBeats * endSegment.BeginValue;
+            else
+            {
+                var speedZero = (endSegment.EndValue - endSegment.BeginValue) *
+                                ((targetBeats - endSegment.BeginTime.Beats) / (endSegment.EndTime.Beats -
+                                                                               endSegment.BeginTime.Beats));
+                offset -= (speedZero + endSegment.EndValue - endSegment.BeginValue) * sliceBeats / 2;
+            }
+
+            return offset;
+        }
     }
 
     public enum EventType

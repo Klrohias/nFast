@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Klrohias.NFast.PhiChartLoader.NFast;
 using UnityEngine;
 
 namespace Klrohias.NFast.PhiGamePlay
@@ -9,6 +10,6 @@ namespace Klrohias.NFast.PhiGamePlay
         public SpriteRenderer LineBody;
         public Transform UpNoteViewport;
         public Transform DownNoteViewport;
-        public float Speed = 0f;
+        public ChartLine Line;
     }
 }
