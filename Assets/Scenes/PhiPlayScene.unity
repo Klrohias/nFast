@@ -953,3 +953,6 @@ MonoBehaviour:
   JudgeLinePrefab: {fileID: 1031136668633609566, guid: 1aeaf095e7ace6742a6d58e88df5b059, type: 3}
   NotePrefab: {fileID: 8914547913718732584, guid: 38d2e3d57f93d0c40bfc9d92d125f78c, type: 3}
   HoldNotePrefab: {fileID: 0}
+  TapNoteSprite: {fileID: 21300000, guid: 699238b6db9e1544e95c54e6ae8a9f7b, type: 3}
+  DragNoteSprite: {fileID: 21300000, guid: f178595eb5d726b44b34b77ce7ef2c6a, type: 3}
+  FlickNoteSprite: {fileID: 21300000, guid: d5edf0d4aae032642afed38f2348c844, type: 3}

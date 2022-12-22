@@ -13,12 +13,19 @@ namespace Klrohias.NFast.PhiGamePlay
         private ChartNote note;
         private static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
         private PhiLineWrapper line;
-
+        public SpriteRenderer Renderer;
         public void NoteStart(ChartNote note, PhiLineWrapper line)
         {
             isRunning = true;
             this.note = note;
             this.line = line;
+            Renderer.sprite = note.Type switch
+            {
+                NoteType.Tap => Player.TapNoteSprite,
+                NoteType.Flick => Player.FlickNoteSprite,
+                NoteType.Drag => Player.DragNoteSprite,
+                _ => Player.TapNoteSprite
+            };
             transform.localRotation = ZeroRotation;
         }
 

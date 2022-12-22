@@ -49,6 +49,10 @@ namespace Klrohias.NFast.PhiGamePlay
         public GameObject JudgeLinePrefab;
         public GameObject NotePrefab;
         public GameObject HoldNotePrefab;
+
+        public Sprite TapNoteSprite;
+        public Sprite DragNoteSprite;
+        public Sprite FlickNoteSprite;
         private Texture2D coverTexture = null;
         private AudioClip audioClip = null;
 
