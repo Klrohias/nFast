@@ -8,6 +8,7 @@ using Klrohias.NFast.PhiChartLoader;
 using Klrohias.NFast.Utilities;
 using PlasticPipe.PlasticProtocol.Messages;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Klrohias.NFast.PhiChartLoader.NFast
 {
@@ -206,37 +207,32 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         internal float FindYPos(float targetBeats)
         {
             // A poo of code :)
-            var endSegment = new SpeedSegment();
             var segmentFound = false; 
             var offset = 0f;
             foreach (var speedSegment in SpeedSegments)
             {
-                var deltaBeats = speedSegment.EndTime.Beats - speedSegment.BeginTime.Beats;
-                if (speedSegment.IsStatic)
-                    offset += deltaBeats * speedSegment.BeginValue;
-                else
-                    offset += speedSegment.BeginValue * deltaBeats +
-                              (speedSegment.EndValue - speedSegment.BeginValue) * deltaBeats / 2;
-
                 if (targetBeats >= speedSegment.BeginTime.Beats && targetBeats <= speedSegment.EndTime.Beats)
                 {
-                    endSegment = speedSegment;
+                    var deltaBeats = targetBeats - speedSegment.BeginTime.Beats;
+                    if (speedSegment.IsStatic)
+                        offset += speedSegment.BeginValue * deltaBeats;
+                    else
+                        offset += (speedSegment.BeginValue + speedSegment.EndValue) * deltaBeats * 0.5f;
                     segmentFound = true;
                     break;
+                }
+
+                {
+                    var deltaBeats = speedSegment.EndTime.Beats - speedSegment.BeginTime.Beats;
+                    if (speedSegment.IsStatic)
+                        offset += deltaBeats * speedSegment.BeginValue;
+                    else
+                        offset += speedSegment.BeginValue * deltaBeats +
+                                  (speedSegment.EndValue - speedSegment.BeginValue) * deltaBeats / 2;
                 }
             }
 
             if (!segmentFound) throw new IndexOutOfRangeException($"Segment not found by {targetBeats}");
-
-            var sliceBeats = endSegment.EndTime.Beats - targetBeats;
-            if (endSegment.IsStatic) offset -= sliceBeats * endSegment.BeginValue;
-            else
-            {
-                var speedZero = (endSegment.EndValue - endSegment.BeginValue) *
-                                ((targetBeats - endSegment.BeginTime.Beats) / (endSegment.EndTime.Beats -
-                                                                               endSegment.BeginTime.Beats));
-                offset -= (speedZero + endSegment.EndValue - endSegment.BeginValue) * sliceBeats / 2;
-            }
 
             return offset;
         }
