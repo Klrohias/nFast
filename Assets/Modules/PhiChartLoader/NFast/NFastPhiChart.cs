@@ -146,6 +146,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
     {
         public uint LineId { get; set; } = 0;
 
+        internal float Rotation = 0f;
         internal float YPosition = 0f;
         internal void LoadSpeedSegments(IEnumerable<LineEvent> events)
         {

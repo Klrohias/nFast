@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using Klrohias.NFast.GamePlay;
 using Klrohias.NFast.Native;
 using Klrohias.NFast.Navigation;
 using UnityEngine;
@@ -16,7 +15,6 @@ namespace Klrohias.NFast.Utilities
         {
             // add services here...
             typeof(NavigationService),
-            typeof(TouchService),
             typeof(OSService)
         };
 

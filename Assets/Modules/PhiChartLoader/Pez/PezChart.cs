@@ -379,6 +379,10 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 IsFakeNote = IsFake == 1,
                 Type = Type switch
                 {
+                    1 => NoteType.Tap,
+                    2 => NoteType.Hold,
+                    3 => NoteType.Flick,
+                    4 => NoteType.Drag,
                     _ => NoteType.Tap
                 }
             };

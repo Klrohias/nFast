@@ -9,9 +9,7 @@ using Klrohias.NFast.PhiChartLoader.Pez;
 using Klrohias.NFast.Navigation;
 using Klrohias.NFast.Utilities;
 using UnityEngine;
-using Klrohias.NFast.PhiChartLoader.LargePez;
 using Klrohias.NFast.PhiChartLoader.NFast;
-using Klrohias.NFast.GamePlay;
 using Klrohias.NFast.Native;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
@@ -65,8 +63,6 @@ namespace Klrohias.NFast.PhiGamePlay
         private List<GameObject> lineObjects = new List<GameObject>();
         private IList<ChartNote> notes;
         private int notesBegin = 0;
-        // services
-        private TouchService mainTouchService;
 
         public class GameStartInfo
         {
@@ -78,8 +74,6 @@ namespace Klrohias.NFast.PhiGamePlay
             // load chart file
             var loadInstruction = NavigationService.Get().ExtraData as GameStartInfo;
             if (loadInstruction == null) throw new InvalidOperationException("failed to load: unknown");
-
-            mainTouchService = TouchService.Get();
 
             SetupScreenScale();
             BackgroundTransform.localScale = ScaleVector3(BackgroundTransform.localScale);
@@ -291,7 +285,6 @@ namespace Klrohias.NFast.PhiGamePlay
             eventsGenerator = chart.GetEvents();
 
             // enable services and threads
-            mainTouchService.enabled = true;
             gameRunning = true;
 
             dispatcher.OnException += Debug.LogException;
@@ -372,6 +365,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 {
                     var transform = lineObj.transform;
                     transform.rotation = Quaternion.Euler(0, 0, -value);
+                    lines[lineId].Rotation = -value / 180f * MathF.PI;
                     break;
                 }
                 case EventType.Incline:
@@ -461,9 +455,55 @@ namespace Klrohias.NFast.PhiGamePlay
             ProcessLineEvents();
             dispatcher.Dispatch(UpdateLineHeight);
             dispatcher.Dispatch(FetchNewNotes);
+
+            var touchCount = Input.touchCount;
+            for (int i = 0; i < touchCount; i++)
+            {
+                var touch = Input.GetTouch(i);
+                ProcessTouch(touch);
+            }
         }
 
-        void Update()
+        private Vector2 GetFloor(Vector2 lineOrigin, float rotation, Vector2 touchPos)
+        {
+            if (rotation % MathF.PI == 0f) rotation = 0.0001f;
+            var k = MathF.Tan(rotation);
+            var b = lineOrigin.y - k * lineOrigin.x;
+            var k2 = -1 / k;
+            var b2 = touchPos.y - k2 * touchPos.x;
+            var x = (b2 - b) / (k - k2);
+            var y = k * x + b;
+            return new Vector2(x, y);
+        }
+        private void ProcessTouch(Touch rawTouch)
+        {
+            switch (rawTouch.phase)
+            {
+                case TouchPhase.Began:
+                {
+                    var worldPos = Camera.main.ScreenToWorldPoint(rawTouch.position);
+                    foreach (var chartLine in lines)
+                    {
+                        var linePos = lineObjects[(int) chartLine.LineId].transform.position;
+                        var floorPos = GetFloor(linePos, chartLine.Rotation, worldPos);
+                        Debug.Log(
+                            $"line {chartLine.LineId} {Vector2.Distance(linePos, floorPos)}");
+                    }
+                    break;
+                }
+                case TouchPhase.Moved:
+                    break;
+                case TouchPhase.Stationary:
+                    break;
+                case TouchPhase.Ended:
+                    break;
+                case TouchPhase.Canceled:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        private void Update()
         {
             if (gameRunning) GameTick();
             lock (newNotes)
@@ -472,20 +512,25 @@ namespace Klrohias.NFast.PhiGamePlay
                 {
                     var note = newNotes.Dequeue();
                     var noteObj = note.NoteGameObject;
-                    if (note.NoteGameObject == null)
+                    if (noteObj == null)
                     {
                         noteObj = note.NoteGameObject = notePool.RequestObject();
                         noteObj.SetActive(true);
 
-                        noteObj.transform.parent =
-                            lineObjects[(int) note.LineId].GetComponent<PhiLineWrapper>().UpNoteViewport;
+                        var lineWrapper =
+                            lineObjects[(int) note.LineId].GetComponent<PhiLineWrapper>();
+
+                        noteObj.transform.parent = note.ReverseDirection
+                            ? lineWrapper.DownNoteViewport
+                            : lineWrapper.UpNoteViewport;
 
                         var localPos = noteObj.transform.localPosition;
+                        localPos.y = note.YPosition - lines[(int) note.LineId].YPosition;
                         localPos.x = ToGameXPos(note.XPosition);
                         noteObj.transform.localPosition = localPos;
 
                         var noteWrapper = noteObj.GetComponent<PhiNoteWrapper>();
-                        noteWrapper.NoteStart(note, lineObjects[(int) note.LineId].GetComponent<PhiLineWrapper>());
+                        noteWrapper.NoteStart(note, lineWrapper);
                     }
                 }
             }
