@@ -9,6 +9,11 @@ namespace Klrohias.NFast.Utilities
     {
         public event Action<Exception> OnException;
 
+        ~ThreadDispatcher()
+        {
+            this.Stop();
+        }
+
         public void Dispatch(Action action)
         {
             lock (_actionQueue)
@@ -40,6 +45,7 @@ namespace Klrohias.NFast.Utilities
             }
             _running = true;
         }
+
 
         private bool _running = false;
         private readonly Queue<Action> _actionQueue = new Queue<Action>();

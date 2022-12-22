@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Klrohias.NFast.Utilities
 {
-    public class UnorderedList<T>
+    public class UnorderedList<T> : IEnumerable<T>
     {
         public T[] Items = new T[16];
         private int length;
@@ -45,6 +47,27 @@ namespace Klrohias.NFast.Utilities
             length--;
             Items[index] = Items[length];
             Items[length] = default;
+        }
+
+        public void Remove(T obj)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                var item = Items[i];
+
+                if (!item.Equals(obj)) continue;
+                RemoveAt(i);
+                break;
+            }
+        }
+        public IEnumerator<T> GetEnumerator()
+        {
+            return Items.Take(length).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

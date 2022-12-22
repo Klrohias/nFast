@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
 using Klrohias.NFast.PhiChartLoader.NFast;
+using Klrohias.NFast.Utilities;
 using Newtonsoft.Json;
 
 namespace Klrohias.NFast.PhiChartLoader.Pez

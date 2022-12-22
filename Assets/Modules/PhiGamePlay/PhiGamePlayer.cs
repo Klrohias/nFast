@@ -11,7 +11,11 @@ using Klrohias.NFast.Utilities;
 using UnityEngine;
 using Klrohias.NFast.PhiChartLoader.NFast;
 using Klrohias.NFast.Native;
+using Cysharp.Threading.Tasks;
+using Klrohias.NFast.Tween;
+using TMPro;
 using UnityEngine.Networking;
+using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
 using EventType = Klrohias.NFast.PhiChartLoader.NFast.EventType;
 
@@ -49,7 +53,8 @@ namespace Klrohias.NFast.PhiGamePlay
         public GameObject JudgeLinePrefab;
         public GameObject NotePrefab;
         public GameObject HoldNotePrefab;
-
+        public Image LoadingMask;
+        public TMP_Text MetadataText;
         public Sprite TapNoteSprite;
         public Sprite DragNoteSprite;
         public Sprite FlickNoteSprite;
@@ -121,36 +126,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
             var coverPath = "";
             var musicPath = "";
-
-            #region Disabled
-#if false
-            if (useLargeChart)
-            {
-                await Async.RunOnThread(() =>
-                {
-                    chart = LargePezLoader.Load(filePath, cachePath);
-                    coverPath = Path.Combine(cachePath, chart.Metadata.BackgroundFileName);
-                    musicPath = Path.Combine(cachePath, chart.Metadata.MusicFileName);
-                });
-                await Task.WhenAll(Async.RunOnThread(() =>
-                    {
-                        var coverStream = File.OpenWrite(coverPath);
-                        LargePezLoader.ExtractFile((LargePezChart) chart, chart.Metadata.BackgroundFileName,
-                            coverStream);
-                        coverStream.Flush();
-                        coverStream.Close();
-                    }),
-                    Async.RunOnThread(() =>
-                    {
-                        var musicStream = File.OpenWrite(musicPath);
-                        LargePezLoader.ExtractFile((LargePezChart) chart, chart.Metadata.MusicFileName, musicStream);
-                        musicStream.Flush();
-                        musicStream.Close();
-                    }));
-            }
-            else
-#endif
-            #endregion
+            
             {
                 PezChart pezChart = null;
                 await Async.RunOnThread(() =>
@@ -200,45 +176,34 @@ namespace Klrohias.NFast.PhiGamePlay
 
             stopwatch.Restart();
 
-            await Task.WhenAll(Async.CallbackToTask((resolve) =>
+            async Task LoadMusic()
             {
-                IEnumerator CO_LoadMusic()
+                using var request =
+                    UnityWebRequestMultimedia.GetAudioClip($"file://{musicPath}", AudioType.MPEG);
+                await request.SendWebRequest();
+
+                if (!string.IsNullOrEmpty(request.error))
                 {
-                    using var request =
-                        UnityWebRequestMultimedia.GetAudioClip($"file://{musicPath}", AudioType.MPEG);
-                    yield return request.SendWebRequest();
-                    if (!string.IsNullOrEmpty(request.error))
-                    {
-                        Debug.LogWarning($"music load failed: {request.error}");
-                        resolve();
-                        yield break;
-                    }
-
-                    audioClip = DownloadHandlerAudioClip.GetContent(request);
-                    resolve();
+                    Debug.LogWarning($"music load failed: {request.error}");
+                    return;
                 }
+                audioClip = DownloadHandlerAudioClip.GetContent(request);
+            }
 
-                StartCoroutine(CO_LoadMusic());
-            }), Async.CallbackToTask((resolve) =>
+            async Task LoadCover()
             {
-                IEnumerator CO_LoadCover()
+                using var request =
+                    UnityWebRequestTexture.GetTexture($"file://{coverPath}");
+                await request.SendWebRequest();
+                if (!string.IsNullOrEmpty(request.error))
                 {
-                    using var request =
-                        UnityWebRequestTexture.GetTexture($"file://{coverPath}");
-                    yield return request.SendWebRequest();
-                    if (!string.IsNullOrEmpty(request.error))
-                    {
-                        Debug.LogWarning($"cover load failed: {request.error}");
-                        resolve();
-                        yield break;
-                    }
-
-                    coverTexture = DownloadHandlerTexture.GetContent(request);
-                    resolve();
+                    Debug.LogWarning($"cover load failed: {request.error}");
+                    return;
                 }
+                coverTexture = DownloadHandlerTexture.GetContent(request);
+            }
 
-                StartCoroutine(CO_LoadCover());
-            }), ((NFastPhiChart) chart).GenerateInternals());
+            await Task.WhenAll(LoadMusic(), LoadCover(), ((NFastPhiChart) chart).GenerateInternals());
 
             Debug.Log(
                 $"convert pez to nfast chart + extract files + load cover and audio files: {stopwatch.ElapsedMilliseconds} ms");
@@ -262,6 +227,28 @@ namespace Klrohias.NFast.PhiGamePlay
                 obj.GetComponent<PhiNoteWrapper>().Player = this;
                 return obj;
             }, 5);
+
+
+            MetadataText.text = string.Join('\n', "Name: " + chart.Metadata.Name, "Difficulty: " + chart.Metadata.Level,
+                "Composer: " + chart.Metadata.Composer, "Charter: " + chart.Metadata.Charter);
+
+            await Tweener.Get().RunTween(300f, (value) =>
+            {
+                var color = MetadataText.color;
+                color.a = value;
+                MetadataText.color = color;
+            }, EasingFunction.SineIn);
+            await Task.Delay(1500);
+            await Tweener.Get().RunTween(300f, (value) =>
+            {
+                var color = LoadingMask.color;
+                color.a = value;
+                LoadingMask.color = color;
+                color = MetadataText.color;
+                color.a = value;
+                MetadataText.color = color;
+            }, EasingFunction.SineOut, 1f, 0f);
+            LoadingMask.gameObject.SetActive(false);
 
             // start timer
             Timer = new SystemTimer();
@@ -538,6 +525,12 @@ namespace Klrohias.NFast.PhiGamePlay
                     }
                 }
             }
+        }
+
+        private void OnDestroy()
+        {
+            gameRunning = false;
+            dispatcher.Stop();
         }
     }
 }

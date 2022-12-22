@@ -249,38 +249,6 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         Incline
     }
 
-    public enum EasingFunction
-    {
-        Linear,
-        SineIn,
-        SineOut,
-        SineInOut,
-        QuadIn,
-        QuadOut,
-        QuadInOut,
-        CubicIn,
-        CubicOut,
-        CubicInOut,
-        QuartIn,
-        QuartOut,
-        QuartInOut,
-        QuintIn,
-        QuintOut,
-        ExpoIn,
-        ExpoOut,
-        CircIn,
-        CircOut,
-        CircInOut,
-        BackIn,
-        BackOut,
-        BackInOut,
-        ElasticIn,
-        ElasticOut,
-        BounceIn,
-        BounceOut,
-        BounceInOut,
-    }
-
     public class LineEvent
     {
         public EventType Type { get; set; }

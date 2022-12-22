@@ -3,6 +3,37 @@ using Klrohias.NFast.PhiChartLoader.NFast;
 
 namespace Klrohias.NFast.Utilities
 {
+    public enum EasingFunction
+    {
+        Linear,
+        SineIn,
+        SineOut,
+        SineInOut,
+        QuadIn,
+        QuadOut,
+        QuadInOut,
+        CubicIn,
+        CubicOut,
+        CubicInOut,
+        QuartIn,
+        QuartOut,
+        QuartInOut,
+        QuintIn,
+        QuintOut,
+        ExpoIn,
+        ExpoOut,
+        CircIn,
+        CircOut,
+        CircInOut,
+        BackIn,
+        BackOut,
+        BackInOut,
+        ElasticIn,
+        ElasticOut,
+        BounceIn,
+        BounceOut,
+        BounceInOut,
+    }
     public static class EasingFunctions
     {
         private static float Lerp(float begin, float end, float val)

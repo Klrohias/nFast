@@ -9,7 +9,12 @@ namespace Klrohias.NFast.UIControllers
     public class EntryUIController : MonoBehaviour
     {
         public Button EnterButton;
+        public GameObject ServicesRoot;
 
+        private void Awake()
+        {
+            DontDestroyOnLoad(ServicesRoot);
+        }
         void Start()
         {
             NavigationService.Get().JumpScene("Scenes/EntryScene");

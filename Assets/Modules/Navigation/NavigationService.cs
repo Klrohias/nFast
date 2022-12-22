@@ -1,9 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Klrohias.NFast.Utilities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
+using Klrohias.NFast.Tween;
 
 namespace Klrohias.NFast.Navigation
 {
@@ -17,6 +21,7 @@ namespace Klrohias.NFast.Navigation
 
         private Stack<NavigationItem> navStack = new();
         private object extraData = null;
+        public Image LoadingMask;
 
         public object ExtraData
         {
@@ -42,7 +47,7 @@ namespace Klrohias.NFast.Navigation
             curr.ExtraData = extraData;
             extraData = null;
 
-            SceneManager.LoadSceneAsync(name);
+            LoadSceneTask(name);
         }
 
         public void LoadScene(string name)
@@ -54,7 +59,7 @@ namespace Klrohias.NFast.Navigation
                 ExtraData = extraData
             });
             extraData = null;
-            SceneManager.LoadSceneAsync(name);
+            LoadSceneTask(name);
         }
 
         public void Back()
@@ -64,7 +69,24 @@ namespace Klrohias.NFast.Navigation
             var curr = navStack.Peek();
             if (extraData != null) curr.ExtraData = extraData;
             extraData = null;
-            SceneManager.LoadSceneAsync(curr.SceneName);
+            LoadSceneTask(curr.SceneName);
+        }
+
+        private async void LoadSceneTask(string sceneName)
+        {
+            void LoadingMaskUpdate(float value)
+            {
+                var color = LoadingMask.color;
+                color.a = value;
+                LoadingMask.color = color;
+            }
+
+            LoadingMask.gameObject.SetActive(true);
+            await Tweener.Get().RunTween(300f, LoadingMaskUpdate, EasingFunction.SineIn);
+            await SceneManager.LoadSceneAsync(sceneName);
+            await Task.Delay(300);
+            await Tweener.Get().RunTween(300f, LoadingMaskUpdate, EasingFunction.SineOut, 1f, 0f);
+            LoadingMask.gameObject.SetActive(false);
         }
     }
 }
