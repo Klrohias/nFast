@@ -138,7 +138,12 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         internal float YPosition = 0f;
         internal void GenerateInternals(ChartLine line)
         {
-            YPosition = line.FindYPos(StartTime.Beats);
+            YPosition = line.FindYPos(StartTime);
+            if (Type == NoteType.Hold)
+            {
+                var endYPos = line.FindYPos(EndTime);
+                Height = endYPos - YPosition;
+            }
         }
     }
 
@@ -168,7 +173,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
                     });
                 }
 
-                if (lineEvent.BeginTime.Beats != lineEvent.EndTime.Beats)
+                if (lineEvent.BeginTime != lineEvent.EndTime)
                 {
                     result.Add(new()
                     {
@@ -180,7 +185,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
                     });
                 }
 
-                lastBeats = lineEvent.EndTime.Beats;
+                lastBeats = lineEvent.EndTime;
                 lastSpeed = lineEvent.EndValue;
                 isFirst = false;
             }
@@ -212,9 +217,9 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
             var offset = 0f;
             foreach (var speedSegment in SpeedSegments)
             {
-                if (targetBeats >= speedSegment.BeginTime.Beats && targetBeats <= speedSegment.EndTime.Beats)
+                if (targetBeats >= speedSegment.BeginTime && targetBeats <= speedSegment.EndTime)
                 {
-                    var deltaBeats = targetBeats - speedSegment.BeginTime.Beats;
+                    var deltaBeats = targetBeats - speedSegment.BeginTime;
                     if (speedSegment.IsStatic)
                         offset += speedSegment.BeginValue * deltaBeats;
                     else
@@ -224,7 +229,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
                 }
 
                 {
-                    var deltaBeats = speedSegment.EndTime.Beats - speedSegment.BeginTime.Beats;
+                    var deltaBeats = speedSegment.EndTime - speedSegment.BeginTime;
                     if (speedSegment.IsStatic)
                         offset += deltaBeats * speedSegment.BeginValue;
                     else
@@ -298,5 +303,6 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         }
 
         public override string ToString() => Beats.ToString();
+        public static implicit operator float(ChartTimespan x) => x.Beats;
     }
 }

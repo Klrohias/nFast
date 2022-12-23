@@ -6,19 +6,19 @@ using UnityEngine;
 
 namespace Klrohias.NFast.PhiGamePlay
 {
-    public class PhiNoteWrapper : MonoBehaviour
+    public class PhiNoteWrapper : MonoBehaviour, IPhiNoteWrapper
     {
-        private bool isRunning = false;
-        public PhiGamePlayer Player;
-        private ChartNote note;
-        private static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
-        private PhiLineWrapper line;
+        private bool _isRunning = false;
+        internal PhiGamePlayer Player;
+        private ChartNote _note;
+        internal static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
+        private ChartLine _line;
         public SpriteRenderer Renderer;
-        public void NoteStart(ChartNote note, PhiLineWrapper line)
+        public void NoteStart(ChartNote note)
         {
-            isRunning = true;
-            this.note = note;
-            this.line = line;
+            _isRunning = true;
+            this._note = note;
+            this._line = Player.Lines[(int) note.LineId];
             Renderer.sprite = note.Type switch
             {
                 NoteType.Tap => Player.TapNoteSprite,
@@ -31,15 +31,15 @@ namespace Klrohias.NFast.PhiGamePlay
 
         void Update()
         {
-            if (!isRunning) return;
-            if (Player.CurrentBeats >= note.EndTime.Beats)
+            if (!_isRunning) return;
+            if (Player.CurrentBeats >= _note.EndTime)
             {
-                isRunning = false;
+                _isRunning = false;
                 Player.OnNoteFinalize(this);
                 return;
             }
             var localPos = transform.localPosition;
-            var newPosY = note.YPosition - line.Line.YPosition;
+            var newPosY = _note.YPosition - _line.YPosition;
             localPos.y = newPosY;
             transform.localPosition = localPos;
         }

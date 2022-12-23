@@ -74,18 +74,12 @@ namespace Klrohias.NFast.Navigation
 
         private async void LoadSceneTask(string sceneName)
         {
-            void LoadingMaskUpdate(float value)
-            {
-                var color = LoadingMask.color;
-                color.a = value;
-                LoadingMask.color = color;
-            }
 
             LoadingMask.gameObject.SetActive(true);
-            await Tweener.Get().RunTween(300f, LoadingMaskUpdate, EasingFunction.SineIn);
+            await LoadingMask.NTweenAlpha(300f, EasingFunction.SineIn, 0f, 1f);
             await SceneManager.LoadSceneAsync(sceneName);
             await Task.Delay(300);
-            await Tweener.Get().RunTween(300f, LoadingMaskUpdate, EasingFunction.SineOut, 1f, 0f);
+            await LoadingMask.NTweenAlpha(300f, EasingFunction.SineOut, 1f, 0f);
             LoadingMask.gameObject.SetActive(false);
         }
     }

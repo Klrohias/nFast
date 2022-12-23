@@ -10,6 +10,5 @@ namespace Klrohias.NFast.PhiGamePlay
         public SpriteRenderer LineBody;
         public Transform UpNoteViewport;
         public Transform DownNoteViewport;
-        public ChartLine Line;
     }
 }

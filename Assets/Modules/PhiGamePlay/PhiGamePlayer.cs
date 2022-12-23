@@ -68,7 +68,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         // chart data
         private IPhiChart chart;
-        private IList<ChartLine> lines;
+        internal IList<ChartLine> Lines;
         private List<GameObject> lineObjects = new List<GameObject>();
         private IList<ChartNote> notes;
         private int notesBegin = 0;
@@ -212,6 +212,8 @@ namespace Klrohias.NFast.PhiGamePlay
         async void GameBegin()
         {
             Debug.Log("game begin");
+
+            // create pools
             linePool = new(() =>
             {
                 var obj = Instantiate(JudgeLinePrefab);
@@ -228,26 +230,23 @@ namespace Klrohias.NFast.PhiGamePlay
                 return obj;
             }, 5);
 
+            holdNotePool = new(() =>
+            {
+                var obj = Instantiate(HoldNotePrefab);
+                obj.name += " [Pooled]";
+                obj.GetComponent<PhiHoldNoteWrapper>().Player = this;
+                return obj;
+            }, 5);
+
+            // play animation
 
             MetadataText.text = string.Join('\n', "Name: " + chart.Metadata.Name, "Difficulty: " + chart.Metadata.Level,
                 "Composer: " + chart.Metadata.Composer, "Charter: " + chart.Metadata.Charter);
 
-            await Tweener.Get().RunTween(300f, (value) =>
-            {
-                var color = MetadataText.color;
-                color.a = value;
-                MetadataText.color = color;
-            }, EasingFunction.SineIn);
+            await MetadataText.NTweenAlpha(300f, EasingFunction.SineIn, 0f, 1f);
             await Task.Delay(1500);
-            await Tweener.Get().RunTween(300f, (value) =>
-            {
-                var color = LoadingMask.color;
-                color.a = value;
-                LoadingMask.color = color;
-                color = MetadataText.color;
-                color.a = value;
-                MetadataText.color = color;
-            }, EasingFunction.SineOut, 1f, 0f);
+            await Task.WhenAll(MetadataText.NTweenAlpha(300f, EasingFunction.SineOut, 1f, 0f),
+                LoadingMask.NTweenAlpha(300f, EasingFunction.SineOut, 1f, 0f));
             LoadingMask.gameObject.SetActive(false);
 
             // start timer
@@ -260,13 +259,12 @@ namespace Klrohias.NFast.PhiGamePlay
             nextBpmEvent = bpmEventGenerator.Current;
 
             // generate lines
-            lines = chart.GetLines();
-            for (int i = 0; i < lines.Count; i++)
+            Lines = chart.GetLines();
+            for (int i = 0; i < Lines.Count; i++)
             {
                 var obj = linePool.RequestObject();
                 lineObjects.Add(obj);
                 obj.SetActive(true);
-                obj.GetComponent<PhiLineWrapper>().Line = lines[i];
             }
 
             // notes
@@ -313,8 +311,8 @@ namespace Klrohias.NFast.PhiGamePlay
        
         private void DoLineEvent(LineEvent lineEvent, float beat)
         {
-            var last = lineEvent.EndTime.Beats - lineEvent.BeginTime.Beats;
-            var easingX = (beat - lineEvent.BeginTime.Beats) / last;
+            var last = lineEvent.EndTime - lineEvent.BeginTime;
+            var easingX = (beat - lineEvent.BeginTime) / last;
             easingX = Mathf.Clamp(easingX, 0, 1);
             var easingY = EasingFunctions.Invoke(
                 lineEvent.EasingFunc, easingX
@@ -356,7 +354,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 {
                     var transform = lineObj.transform;
                     transform.rotation = Quaternion.Euler(0, 0, -value);
-                    lines[lineId].Rotation = -value / 180f * MathF.PI;
+                    Lines[lineId].Rotation = -value / 180f * MathF.PI;
                     break;
                 }
                 case EventType.Incline:
@@ -369,8 +367,8 @@ namespace Klrohias.NFast.PhiGamePlay
             for (int i = 0; i < runningEvents.Length; i++)
             {
                 var item = runningEvents[i];
-                if (item.BeginTime.Beats > CurrentBeats) continue;
-                if (CurrentBeats > item.EndTime.Beats)
+                if (item.BeginTime > CurrentBeats) continue;
+                if (CurrentBeats > item.EndTime)
                 {
                     runningEvents.RemoveAt(i);
                 }
@@ -381,9 +379,9 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void UpdateLineHeight()
         {
-            for (int i = 0; i < lines.Count; i++)
+            for (int i = 0; i < Lines.Count; i++)
             {
-                var line = lines[i];
+                var line = Lines[i];
                 var newYPos = line.FindYPos(CurrentBeats);
                 line.YPosition = newYPos;
             }
@@ -394,8 +392,7 @@ namespace Klrohias.NFast.PhiGamePlay
             for (int i = notesBegin; i < notes.Count; i++)
             {
                 var note = notes[i]; 
-                var yOffset = note.YPosition - lines[(int) note.LineId].YPosition;
-                note.Height = yOffset;
+                var yOffset = note.YPosition - Lines[(int) note.LineId].YPosition;
                 if (yOffset <= 25f && yOffset >= 0)
                 {
                     newNotes.Enqueue(note);
@@ -408,6 +405,10 @@ namespace Klrohias.NFast.PhiGamePlay
         public void OnNoteFinalize(PhiNoteWrapper note)
         {
             notePool.ReturnObject(note.gameObject);
+        }
+        public void OnNoteFinalize(PhiHoldNoteWrapper note)
+        {
+            holdNotePool.ReturnObject(note.gameObject);
         }
 
         private void FetchNewEvents()
@@ -423,7 +424,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private void GameTick()
         {
             if (currentBpm != 0f) CurrentBeats = Timer.Time / 1000f / beatLast;
-            if (nextBpmEvent.Key.Beats <= CurrentBeats)
+            if (nextBpmEvent.Key <= CurrentBeats)
             {
                 currentBpm = nextBpmEvent.Value;
                 nextBpmEvent = bpmEventGenerator.MoveNext()
@@ -453,6 +454,8 @@ namespace Klrohias.NFast.PhiGamePlay
                 var touch = Input.GetTouch(i);
                 ProcessTouch(touch);
             }
+
+            ProcessNewNotes();
         }
 
         private Vector2 GetFloor(Vector2 lineOrigin, float rotation, Vector2 touchPos)
@@ -473,7 +476,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 case TouchPhase.Began:
                 {
                     var worldPos = Camera.main.ScreenToWorldPoint(rawTouch.position);
-                    foreach (var chartLine in lines)
+                    foreach (var chartLine in Lines)
                     {
                         var linePos = lineObjects[(int) chartLine.LineId].transform.position;
                         var floorPos = GetFloor(linePos, chartLine.Rotation, worldPos);
@@ -494,37 +497,48 @@ namespace Klrohias.NFast.PhiGamePlay
                     throw new ArgumentOutOfRangeException();
             }
         }
+
+        private void ProcessNewNotes()
+        {
+            lock (newNotes)
+            {
+                var noteCount = newNotes.Count;
+                for (var i = 0; i < noteCount; i++)
+                {
+                    var note = newNotes.Dequeue();
+
+                    var noteObj = note.NoteGameObject;
+                    if (noteObj != null) continue;
+
+                    var isHold = note.Type == NoteType.Hold;
+
+                    noteObj = note.NoteGameObject =
+                        isHold ? holdNotePool.RequestObject() : notePool.RequestObject();
+
+                    var lineWrapper =
+                        lineObjects[(int) note.LineId].GetComponent<PhiLineWrapper>();
+
+                    noteObj.transform.parent = note.ReverseDirection
+                        ? lineWrapper.DownNoteViewport
+                        : lineWrapper.UpNoteViewport;
+
+                    var localPos = noteObj.transform.localPosition;
+                    localPos.y = note.YPosition - Lines[(int) note.LineId].YPosition;
+                    localPos.x = ToGameXPos(note.XPosition);
+                    noteObj.transform.localPosition = localPos;
+
+                    IPhiNoteWrapper noteWrapper =
+                        isHold
+                            ? noteObj.GetComponent<PhiHoldNoteWrapper>()
+                            : noteObj.GetComponent<PhiNoteWrapper>();
+                    noteWrapper.NoteStart(note);
+                    noteObj.SetActive(true);
+                }
+            }
+        }
         private void Update()
         {
             if (gameRunning) GameTick();
-            lock (newNotes)
-            {
-                while (newNotes.Count > 0)
-                {
-                    var note = newNotes.Dequeue();
-                    var noteObj = note.NoteGameObject;
-                    if (noteObj == null)
-                    {
-                        noteObj = note.NoteGameObject = notePool.RequestObject();
-                        noteObj.SetActive(true);
-
-                        var lineWrapper =
-                            lineObjects[(int) note.LineId].GetComponent<PhiLineWrapper>();
-
-                        noteObj.transform.parent = note.ReverseDirection
-                            ? lineWrapper.DownNoteViewport
-                            : lineWrapper.UpNoteViewport;
-
-                        var localPos = noteObj.transform.localPosition;
-                        localPos.y = note.YPosition - lines[(int) note.LineId].YPosition;
-                        localPos.x = ToGameXPos(note.XPosition);
-                        noteObj.transform.localPosition = localPos;
-
-                        var noteWrapper = noteObj.GetComponent<PhiNoteWrapper>();
-                        noteWrapper.NoteStart(note, lineWrapper);
-                    }
-                }
-            }
         }
 
         private void OnDestroy()

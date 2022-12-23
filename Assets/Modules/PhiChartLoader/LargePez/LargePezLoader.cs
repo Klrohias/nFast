@@ -129,7 +129,7 @@ namespace Klrohias.NFast.PhiChartLoader.LargePez
                         tokenizer.ParseNextToken();
                         var third = int.Parse(walker.NextToken().Value);
                         var time = new ChartTimespan(first, second, third);
-                        var beatIndex = (uint)Math.Floor(time.Beats);
+                        var beatIndex = (uint)Math.Floor(time);
                         PutNoteOffset(beatIndex, note.Position);
                     }
                     // walker.LeaveBlock();

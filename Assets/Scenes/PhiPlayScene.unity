@@ -441,7 +441,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 16777215
   m_fontColor: {r: 1, g: 1, b: 1, a: 0}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -582,8 +582,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Sprite: {fileID: 21300000, guid: bc27755d5d8003d418215600c4de4ade, type: 3}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -953,7 +953,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.010864258, y: 0.0009765625}
+  m_AnchoredPosition: {x: -0.010986328, y: 0.0009765625}
   m_SizeDelta: {x: 0.6999512, y: 0.710022}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1069853563
@@ -1165,7 +1165,7 @@ MonoBehaviour:
   - {fileID: 847088436}
   JudgeLinePrefab: {fileID: 1031136668633609566, guid: 1aeaf095e7ace6742a6d58e88df5b059, type: 3}
   NotePrefab: {fileID: 8914547913718732584, guid: 38d2e3d57f93d0c40bfc9d92d125f78c, type: 3}
-  HoldNotePrefab: {fileID: 0}
+  HoldNotePrefab: {fileID: 5592613672520645034, guid: 757fbce5895c45045a0f184acdf57a63, type: 3}
   LoadingMask: {fileID: 1069853563}
   MetadataText: {fileID: 349472719}
   TapNoteSprite: {fileID: 21300000, guid: 699238b6db9e1544e95c54e6ae8a9f7b, type: 3}
