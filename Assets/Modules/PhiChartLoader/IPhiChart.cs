@@ -11,5 +11,6 @@ namespace Klrohias.NFast.PhiChartLoader
         public IEnumerator<IList<LineEvent>> GetEvents();
         public IList<ChartLine> GetLines();
         public IEnumerator<KeyValuePair<ChartTimespan, float>> GetBpmEvents();
+        public IList<ChartNote> GetNotesByBeatIndex(int index);
     }
 }

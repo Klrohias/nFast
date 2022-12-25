@@ -5,5 +5,6 @@ namespace Klrohias.NFast.PhiGamePlay
     public interface IPhiNoteWrapper
     {
         public void NoteStart(ChartNote note);
+        public bool IsJudged { get; set; }
     }
 }

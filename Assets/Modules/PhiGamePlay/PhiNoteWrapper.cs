@@ -14,11 +14,13 @@ namespace Klrohias.NFast.PhiGamePlay
         internal static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
         private ChartLine _line;
         public SpriteRenderer Renderer;
+        public bool IsJudged { get; set; } = false;
         public void NoteStart(ChartNote note)
         {
             _isRunning = true;
             this._note = note;
             this._line = Player.Lines[(int) note.LineId];
+            this.IsJudged = false;
             Renderer.sprite = note.Type switch
             {
                 NoteType.Tap => Player.TapNoteSprite,
@@ -32,7 +34,7 @@ namespace Klrohias.NFast.PhiGamePlay
         void Update()
         {
             if (!_isRunning) return;
-            if (Player.CurrentBeats >= _note.EndTime)
+            if (Player.CurrentBeats >= _note.EndTime + (!IsJudged ? (15f / _line.Speed) : 0f))
             {
                 _isRunning = false;
                 Player.OnNoteFinalize(this);

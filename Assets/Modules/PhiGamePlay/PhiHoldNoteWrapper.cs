@@ -16,10 +16,12 @@ namespace Klrohias.NFast.PhiGamePlay
         private ChartLine _line;
         private const float BODY_HEIGHT = 0.04f;
         private const float Y_SCALE = 2.5f;
+        private float _noteLast = 0f;
+        public bool IsJudged { get; set; } = false;
         private void Update()
         {
             if (!_isRunning) return;
-            if (Player.CurrentBeats >= _note.EndTime)
+            if (Player.CurrentBeats >= _note.EndTime + (!IsJudged ? _noteLast : 0f))
             {
                 _isRunning = false;
                 Player.OnNoteFinalize(this);
@@ -36,11 +38,13 @@ namespace Klrohias.NFast.PhiGamePlay
             _isRunning = true;
             this._note = note;
             this._line = Player.Lines[(int)note.LineId];
+            this._noteLast = note.EndTime - note.BeginTime;
             transform.localRotation = PhiNoteWrapper.ZeroRotation;
             BottomHead.localPosition = Vector3.zero;
             Body.localScale = new Vector3(1f, note.Height / BODY_HEIGHT / Y_SCALE, 1f);
             TopHead.localPosition = Vector3.up * note.Height / Y_SCALE;
             Body.localPosition = Vector3.up * (note.Height / Y_SCALE / 2f);
         }
+
     }
 }

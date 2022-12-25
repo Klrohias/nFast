@@ -44,6 +44,7 @@ namespace Klrohias.NFast.Tween
                     tween.Update(tween.EndValue);
                     tween.Finish();
                     _tweens.Remove(tween);
+                    i--;
                     continue;
                 }
 

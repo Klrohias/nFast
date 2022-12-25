@@ -25,8 +25,21 @@ namespace Klrohias.NFast.Utilities
 
         public void Add(T item)
         {
+            if (length + 1 >= Items.Length)
+            {
+                Realloc((int) (Items.Length * 1.5f));
+            }
             Items[length] = item;
             length++;
+        }
+
+        public void AddIfNotExists(T item)
+        {
+            for (int i = 0; i < Items.Length; i++)
+            {
+                if (object.ReferenceEquals(Items[i], item)) return;
+            }
+            Add(item);
         }
 
         public void AddRange(IList<T> itemList)
@@ -41,7 +54,11 @@ namespace Klrohias.NFast.Utilities
                 Add(item);
             }
         }
-
+        
+        /// <summary>
+        /// note: when use RemoveAt in a for-loop, make index minus one, or it will cause bugs
+        /// </summary>
+        /// <param name="index">the index of element which will be removed</param>
         public void RemoveAt(int index)
         {
             length--;
@@ -55,11 +72,17 @@ namespace Klrohias.NFast.Utilities
             {
                 var item = Items[i];
 
-                if (!item.Equals(obj)) continue;
+                if (!object.ReferenceEquals(item, obj)) continue;
                 RemoveAt(i);
                 break;
             }
         }
+
+        public void Clear()
+        {
+            length = 0;
+        }
+
         public IEnumerator<T> GetEnumerator()
         {
             return Items.Take(length).GetEnumerator();
@@ -69,5 +92,6 @@ namespace Klrohias.NFast.Utilities
         {
             return GetEnumerator();
         }
+
     }
 }

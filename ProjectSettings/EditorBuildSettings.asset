@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PhiPlayScene.unity
     guid: f9c205fb88e730c418c27f07cea851c7
+  - enabled: 1
+    path: Assets/Scenes/PlayFinishScene.unity
+    guid: 41451bf8d23b86b4882e53f6b4ce22ea
   m_configObjects: {}

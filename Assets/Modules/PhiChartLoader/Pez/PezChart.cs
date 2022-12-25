@@ -36,6 +36,11 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
             return nFastChart.GetBpmEvents();
         }
 
+        public IList<ChartNote> GetNotesByBeatIndex(int index)
+        {
+            return nFastChart.GetNotesByBeatIndex(index);
+        }
+
 
         [JsonProperty("META")]
         public PezMetadata PezMetadata { get; set; } = null;
@@ -374,7 +379,7 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
             {
                 LineId = lineId,
                 EndTime = new ChartTimespan(EndTime),
-                StartTime = new ChartTimespan(StartTime),
+                BeginTime = new ChartTimespan(StartTime),
                 XPosition = PositionX,
                 ReverseDirection = Above == 0,
                 IsFakeNote = IsFake == 1,
