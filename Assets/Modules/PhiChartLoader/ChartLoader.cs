@@ -55,11 +55,15 @@ namespace Klrohias.NFast.PhiChartLoader
 
             if (chart == null)
                 throw new NullReferenceException("Failed to load Pez chart");
-                    
-            var cachePath = Path.Combine(context.CachePath, path);
-            if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
 
-            resourceProvider.CachePath = cachePath;
+            if (!string.IsNullOrWhiteSpace(context.CachePath))
+            {
+                var cachePath = Path.Combine(context.CachePath, path);
+                if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
+
+                resourceProvider.CachePath = cachePath;
+            }
+
             result.ResourceProvider = resourceProvider;
             result.Chart = chart.ToNFastChart();
 
@@ -77,9 +81,13 @@ namespace Klrohias.NFast.PhiChartLoader
 
             if (chart == null) throw new NullReferenceException("Failed to deserialize NFast chart");
 
-            var cachePath = Path.Combine(context.Path, chart.Metadata.ChartId);
-            if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
-            resourceProvider.CachePath = cachePath;
+            if (!string.IsNullOrWhiteSpace(context.CachePath))
+            {
+                var cachePath = Path.Combine(context.CachePath, chart.Metadata.ChartId);
+                if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
+                resourceProvider.CachePath = cachePath;
+            }
+
             result.ResourceProvider = resourceProvider;
             result.Chart = chart;
 
@@ -100,6 +108,34 @@ namespace Klrohias.NFast.PhiChartLoader
                 case ".nfp": return LoadNFastChart(ctx);
             }
             throw new ArgumentOutOfRangeException($"Unknown file type '{ext ?? "undefined"}");
+        }
+
+        public static async Task<string> ToNFastChart(string path)
+        {
+            // TODO: custom output path, etc.
+            var outputDir = Path.GetDirectoryName(path);
+            var outputFile = Path.GetFileNameWithoutExtension(path) + ".nfp";
+            var outputPath = Path.Combine(outputDir, outputFile);
+            var cacheOutput = Path.Combine(outputDir, NFAST_CHART);
+
+            if (File.Exists(outputPath)) return outputPath;
+
+            var loadResult = await LoadChartAsync(path, null);
+            var outStream = File.OpenWrite(cacheOutput);
+            await MemoryPackSerializer.SerializeAsync(outStream, loadResult.Chart);
+            await outStream.FlushAsync();
+            outStream.Close();
+
+            File.Copy(path, outputPath);
+            var zipFile = new ZipFile(outputPath);
+            zipFile.BeginUpdate();
+            zipFile.Add(new StaticDiskDataSource(cacheOutput), NFAST_CHART);
+            zipFile.CommitUpdate();
+            zipFile.Close();
+
+            File.Delete(cacheOutput);
+
+            return outputPath;
         }
     }
 }

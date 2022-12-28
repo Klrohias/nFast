@@ -21,7 +21,7 @@ namespace Klrohias.NFast.PhiChartLoader
         {
             // convert bpm events
             var bpmEvents = BpmEvents.Select(x => x.ToNFastEvent())
-                .OrderBy(x => x.Key.Beats).ToList();
+                .OrderBy(x => x.Key).ToList();
 
             // TODO: decouple event converting
 
@@ -45,9 +45,6 @@ namespace Klrohias.NFast.PhiChartLoader
                     .ToArray();
                 events.CopyTo(eventsArray, eventIndex);
                 eventIndex += events.Length;
-
-                // make speed cache
-                line.LoadSpeedSegments(events.Where(x => x.Type == LineEventType.Speed).OrderBy(x => x.BeginTime.Beats));
 
                 // cast notes
                 if (judgeLine.Notes != null)
@@ -119,8 +116,8 @@ namespace Klrohias.NFast.PhiChartLoader
         [JsonProperty("bpm")] public float Bpm;
         [JsonProperty("startTime")] public List<int> Time;
 
-        public KeyValuePair<ChartTimespan, float> ToNFastEvent()
-            => new(new ChartTimespan(Time), Bpm);
+        public KeyValuePair<float, float> ToNFastEvent()
+            => new(ChartTimespan.FromBeatsFraction(Time), Bpm);
     }
     public class PezLineEvent
     {
@@ -185,10 +182,10 @@ namespace Klrohias.NFast.PhiChartLoader
         {
             return new LineEvent()
             {
-                BeginTime = new ChartTimespan(StartTime),
+                BeginTime = ChartTimespan.FromBeatsFraction(StartTime),
                 BeginValue = Start,
                 EasingFuncRange = (EasingLeft, EasingRight),
-                EndTime = new ChartTimespan(EndTime),
+                EndTime = ChartTimespan.FromBeatsFraction(EndTime),
                 EndValue = End,
                 EasingFunc = ToNFastEasingFunction(),
                 Type = type,
@@ -333,8 +330,8 @@ namespace Klrohias.NFast.PhiChartLoader
             return new()
             {
                 LineId = lineId,
-                EndTime = new ChartTimespan(EndTime),
-                BeginTime = new ChartTimespan(StartTime),
+                EndTime = ChartTimespan.FromBeatsFraction(EndTime),
+                BeginTime = ChartTimespan.FromBeatsFraction(StartTime),
                 XPosition = PositionX,
                 ReverseDirection = Above == 0,
                 IsFakeNote = IsFake == 1,

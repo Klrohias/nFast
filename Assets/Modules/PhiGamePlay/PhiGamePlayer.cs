@@ -22,10 +22,10 @@ namespace Klrohias.NFast.PhiGamePlay
         private int _currentBeatCount = 0;
         private int _lastBeatCount = -1;
         public float CurrentBeats { get; private set; } = 0f;
-        private KeyValuePair<ChartTimespan, float> _nextBpmEvent;
+        private KeyValuePair<float, float> _nextBpmEvent;
         private float _currentBpm = 0f;
         private float _beatLast = 0f;
-        private IEnumerator<KeyValuePair<ChartTimespan, float>> _bpmEventGenerator;
+        private IEnumerator<KeyValuePair<float, float>> _bpmEventGenerator;
         private readonly ThreadDispatcher _dispatcher = new ThreadDispatcher();
         private readonly Queue<PhiNote> _newNotes = new Queue<PhiNote>();
 
@@ -108,12 +108,16 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             var cachePath = OSService.Get().CachePath;
 
-            var loadResult = await ChartLoader.LoadChartAsync(filePath, cachePath);
-            _resourceProvider = loadResult.ResourceProvider;
-            _chart = loadResult.Chart;
-
+            // var path = await ChartLoader.ToNFastChart(filePath);
+            var path = filePath;
 
             Stopwatch stopwatch = Stopwatch.StartNew();
+            var loadResult = await ChartLoader.LoadChartAsync(path, cachePath);
+            _resourceProvider = loadResult.ResourceProvider;
+            _chart = loadResult.Chart;
+            
+            Debug.Log($"load chart: {stopwatch.ElapsedMilliseconds}ms");
+            stopwatch.Restart();
 
             async Task LoadMusic()
             {
@@ -129,7 +133,7 @@ namespace Klrohias.NFast.PhiGamePlay
             await Task.WhenAll(LoadMusic(), LoadCover(), _chart.GenerateInternals());
 
             Debug.Log(
-                $"convert pez to nfast chart + extract files + load cover and audio files: {stopwatch.ElapsedMilliseconds} ms");
+                $"load cover and audio files: {stopwatch.ElapsedMilliseconds} ms");
         }
 
         async void GameBegin()
@@ -383,7 +387,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 _currentBpm = _nextBpmEvent.Value;
                 _nextBpmEvent = _bpmEventGenerator.MoveNext()
                     ? _bpmEventGenerator.Current
-                    : new(new(float.PositiveInfinity), 0f);
+                    : new(float.PositiveInfinity, 0f);
                 _beatLast = 60f / _currentBpm;
             }
 
