@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Codice.CM.Common;
-using Klrohias.NFast.PhiChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader;
 using UnityEngine;
 
 namespace Klrohias.NFast.PhiGamePlay
@@ -10,12 +10,12 @@ namespace Klrohias.NFast.PhiGamePlay
     {
         private bool _isRunning = false;
         internal PhiGamePlayer Player;
-        private ChartNote _note;
+        private PhiNote _note;
         internal static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
-        private ChartLine _line;
+        private PhiLine _line;
         public SpriteRenderer Renderer;
         public bool IsJudged { get; set; } = false;
-        public void NoteStart(ChartNote note)
+        public void NoteStart(PhiNote note)
         {
             _isRunning = true;
             this._note = note;

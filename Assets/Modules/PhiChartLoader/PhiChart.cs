@@ -1,28 +1,23 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Klrohias.NFast.PhiChartLoader;
 using Klrohias.NFast.Utilities;
-using PlasticPipe.PlasticProtocol.Messages;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 using MemoryPack;
 
-namespace Klrohias.NFast.PhiChartLoader.NFast
+namespace Klrohias.NFast.PhiChartLoader
 {
     [MemoryPackable]
-    public partial class NFastPhiChart : IPhiChart
+    public partial class PhiChart
     {
         public ChartMetadata Metadata { get; set; }
-        public ChartNote[] Notes { get; set; }
-        public ChartLine[] Lines { get; set; }
+        public PhiNote[] Notes { get; set; }
+        public PhiLine[] Lines { get; set; }
         public LineEvent[] LineEvents { get; set; }
         public List<KeyValuePair<ChartTimespan, float>> BpmEvents { get; set; }
 
-        public IList<ChartNote> GetNotes()
+        public IList<PhiNote> GetNotes()
         {
             return Notes;
         }
@@ -39,7 +34,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
             }
         }
 
-        public IList<ChartLine> GetLines()
+        public IList<PhiLine> GetLines()
         {
             return Lines;
         }
@@ -49,14 +44,14 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
             return BpmEvents.GetEnumerator();
         }
 
-        public IList<ChartNote> GetNotesByBeatIndex(int index)
+        public IList<PhiNote> GetNotesByBeatIndex(int index)
         {
-            if (!JudgeNoteGroups.TryGetValue(index, out var result)) return new List<ChartNote>();
+            if (!JudgeNoteGroups.TryGetValue(index, out var result)) return new List<PhiNote>();
             return result;
         }
 
-        internal Dictionary<int, List<LineEvent>> LineEventGroups = new();
-        internal Dictionary<int, List<ChartNote>> JudgeNoteGroups = new();
+        internal readonly Dictionary<int, List<LineEvent>> LineEventGroups = new();
+        internal readonly Dictionary<int, List<PhiNote>> JudgeNoteGroups = new();
         internal async Task GenerateInternals()
         {
             const int maxThreads = 2;
@@ -115,7 +110,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
             await Task.WhenAll(threadTasks);
         }
 
-        internal float FindJudgeTime(ChartNote note)
+        internal float FindJudgeTime(PhiNote note)
         {
             var noteTime = note.BeginTime;
             var result = 0f;
@@ -151,6 +146,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         }
 
     }
+
     [MemoryPackable]
     public partial class ChartMetadata
     {
@@ -160,6 +156,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         public string Level { get; set; } = "";
         public string Charter { get; set; } = "";
         public string Composer { get; set; } = "";
+        public string ChartId { get; set; } = "";
     }
 
     public enum NoteType
@@ -170,7 +167,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         Drag
     }
     [MemoryPackable]
-    public partial class ChartNote
+    public partial class PhiNote
     {
         public NoteType Type { get; set; } = NoteType.Tap;
         public ChartTimespan BeginTime { get; set; } = ChartTimespan.Zero;
@@ -184,7 +181,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         internal float Height = 0f;
         internal float YPosition = 0f;
         internal float JudgeTime = 0f;
-        internal void GenerateInternals(ChartLine line, NFastPhiChart chart)
+        internal void GenerateInternals(PhiLine line, PhiChart chart)
         {
             YPosition = line.FindYPos(BeginTime);
             if (Type == NoteType.Hold)
@@ -197,7 +194,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         }
     }
     [MemoryPackable]
-    public partial class ChartLine
+    public partial class PhiLine
     {
         public uint LineId { get; set; } = 0;
 
@@ -295,7 +292,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
         }
     }
 
-    public enum EventType
+    public enum LineEventType
     {
         Alpha,
         MoveX,
@@ -308,7 +305,7 @@ namespace Klrohias.NFast.PhiChartLoader.NFast
     [MemoryPackable]
     public partial class LineEvent
     {
-        public EventType Type { get; set; }
+        public LineEventType Type { get; set; }
         public float BeginValue { get; set; }
         public ChartTimespan BeginTime { get; set; }
         public float EndValue { get; set; }

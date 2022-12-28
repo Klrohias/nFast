@@ -1,5 +1,5 @@
 # nFast
-![nFast](https://socialify.git.ci/Klrohias/nFast/image?font=Source%20Code%20Pro&forks=1&issues=1&language=1&name=1&owner=1&pulls=1&stargazers=1&theme=Light)
+![nfast](https://socialify.git.ci/klrohias/nfast/image?font=Source%20Code%20Pro&forks=1&issues=1&language=1&name=1&owner=1&pattern=Plus&pulls=1&stargazers=1&theme=Auto)  
 
 [📦 Download](https://github.com/Klrohias/nFast/releases) | [📃 文档 (中文)](README.md) | [📃 Docs (English)](README.en.md)
 
