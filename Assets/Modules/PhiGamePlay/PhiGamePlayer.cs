@@ -78,19 +78,16 @@ namespace Klrohias.NFast.PhiGamePlay
             Good,
             Perfect
         }
-        public class GameStartInfo
-        {
-            public string Path = "";
-        }
         async void Start()
         {
             // load chart file
-            var loadInstruction = NavigationService.Get().ExtraData as GameStartInfo;
+            var loadInstruction = NavigationService.Get().ExtraData as string;
             if (loadInstruction == null) throw new InvalidOperationException("failed to load: unknown");
             
             BackgroundTransform.localScale = ScreenAdapter.ScaleVector3(BackgroundTransform.localScale);
 
-            await LoadChart(loadInstruction.Path);
+            await LoadChart(loadInstruction);
+
             MaterialPropertyBlock block = new MaterialPropertyBlock();
             block.SetTexture("_MainTex", _coverTexture);
             foreach (var backgroundImage in BackgroundImages)

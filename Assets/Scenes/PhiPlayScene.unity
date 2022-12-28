@@ -1226,9 +1226,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Player: {fileID: 1316135047}
+  ScreenAdapter: {fileID: 10632402}
   PerfectJudgeRange: 80
   GoodJudgeRange: 150
   BadJudgeRange: 350
+  Autoplay: 0
 --- !u!1 &1362777252
 GameObject:
   m_ObjectHideFlags: 0

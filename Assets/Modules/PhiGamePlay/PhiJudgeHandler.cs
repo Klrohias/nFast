@@ -19,7 +19,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private UnorderedList<PhiNote> _judgeNotes;
 
         private readonly UnorderedList<TouchDetail> _touches = new UnorderedList<TouchDetail>();
-        private readonly UnorderedList<PhiNote> _judgingHoldNotes = new UnorderedList<PhiNote>();
+        private readonly UnorderedList<Tuple<PhiNote, PhiGamePlayer.JudgeResult>> _judgingHoldNotes = new();
         private int _touchCount = 0; // update each frame
         private float _currentTime = 0f;
         private const float NOTE_WIDTH = 2.5f * 0.88f;
@@ -51,16 +51,20 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             for (var i = 0; i < _judgingHoldNotes.Length; i++)
             {
-                var item = _judgingHoldNotes[i];
-                if (item.EndTime <= Player.CurrentBeats)
+                var (note, judgeResult) = _judgingHoldNotes[i];
+                if (note.EndTime <= Player.CurrentBeats)
                 {
-                    PutJudgeResult(item, PhiGamePlayer.JudgeResult.Perfect); // TODO: send right judge result
+                    PutJudgeResult(note, judgeResult);
+                    _judgingHoldNotes.RemoveAt(i);
+                    i--;
                     continue;
                 }
 
-                if (!UpdateHoldNote(item))
+                if (!UpdateHoldNote(note))
                 {
-                    PutJudgeResult(item, PhiGamePlayer.JudgeResult.Miss);
+                    PutJudgeResult(note, PhiGamePlayer.JudgeResult.Miss);
+                    _judgingHoldNotes.RemoveAt(i);
+                    i--;
                 }
             }
         }
@@ -127,7 +131,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private void PutJudgeResult(PhiNote note, PhiGamePlayer.JudgeResult result)
         {
             Player.JudgeNotes.Remove(note);
-
+            Debug.Log($"note judge {result}");
         }
 
         private void ProcessDragNote(PhiNote note)
@@ -138,7 +142,7 @@ namespace Klrohias.NFast.PhiGamePlay
             {
                 var touch = _touches[i];
                 if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
-                                _touches[i].LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+                                touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
 
                 PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
                 break;
@@ -190,7 +194,14 @@ namespace Klrohias.NFast.PhiGamePlay
                 if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
                               touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
 
-                _judgingHoldNotes.Add(note);
+                var range = MathF.Abs(_currentTime - note.JudgeTime);
+                var judgeResult = PhiGamePlayer.JudgeResult.Miss;
+                if (range < PerfectJudgeRange) judgeResult = PhiGamePlayer.JudgeResult.Perfect;
+                else if (range < GoodJudgeRange) judgeResult = PhiGamePlayer.JudgeResult.Good;
+
+                if (judgeResult == PhiGamePlayer.JudgeResult.Miss) break;
+
+                _judgingHoldNotes.Add(new Tuple<PhiNote, PhiGamePlayer.JudgeResult>(note, PhiGamePlayer.JudgeResult.Miss));
                 Player.JudgeNotes.Remove(note);
                 break;
             }

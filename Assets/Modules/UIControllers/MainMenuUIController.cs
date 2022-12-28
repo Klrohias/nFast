@@ -15,10 +15,7 @@ namespace Klrohias.NFast.UIControllers
         {
             TestButton.onClick.AddListener(() =>
             {
-                NavigationService.Get().ExtraData = new PhiGamePlayer.GameStartInfo()
-                {
-                    Path = "H:/testchart.pez",
-                };
+                NavigationService.Get().ExtraData = "H:/testchart.pez";
                 NavigationService.Get().LoadScene("Scenes/PhiPlayScene");
             });
             var activation = tabGroup.GetFirstActiveToggle();
