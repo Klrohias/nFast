@@ -81,7 +81,5 @@ namespace Klrohias.NFast.Tween
             tween.OnUpdate += action;
             return RunTween(tween);
         }
-
-        public float GetCurrentTime() => _timer.Time;
     }
 }

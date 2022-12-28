@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Klrohias.NFast.PhiChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader;
 using UnityEngine;
 
 namespace Klrohias.NFast.PhiGamePlay
@@ -11,9 +11,9 @@ namespace Klrohias.NFast.PhiGamePlay
         public Transform TopHead;
         public Transform BottomHead;
         public Transform Body;
-        private ChartNote _note;
+        private PhiNote _note;
         internal PhiGamePlayer Player;
-        private ChartLine _line;
+        private PhiLine _line;
         private const float BODY_HEIGHT = 0.04f;
         private const float Y_SCALE = 2.5f;
         private float _noteLast = 0f;
@@ -33,7 +33,7 @@ namespace Klrohias.NFast.PhiGamePlay
             transform.localPosition = localPos;
         }
 
-        public void NoteStart(ChartNote note)
+        public void NoteStart(PhiNote note)
         {
             _isRunning = true;
             this._note = note;

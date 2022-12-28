@@ -1,47 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
-using ICSharpCode.SharpZipLib.Zip;
-using Klrohias.NFast.PhiChartLoader.NFast;
 using Klrohias.NFast.Utilities;
 using Newtonsoft.Json;
 
-namespace Klrohias.NFast.PhiChartLoader.Pez
+namespace Klrohias.NFast.PhiChartLoader
 {
-    public class PezChart : IPhiChart
+    public class PezChart
     {
-        internal ZipFile zipFile = null;
-        internal Dictionary<string, ZipEntry> files = null;
-        private NFastPhiChart nFastChart = null;
-        public NFastPhiChart NFastPhiChart => nFastChart;
-        public ChartMetadata Metadata => nFastChart.Metadata;
-        public IList<ChartNote> GetNotes()
-        {
-            return nFastChart.GetNotes();
-        }
-
-        public IEnumerator<IList<LineEvent>> GetEvents()
-        {
-            return nFastChart.GetEvents();
-        }
-
-        public IList<ChartLine> GetLines()
-        {
-            return nFastChart.GetLines();
-        }
-        public IEnumerator<KeyValuePair<ChartTimespan, float>> GetBpmEvents()
-        {
-            return nFastChart.GetBpmEvents();
-        }
-
-        public IList<ChartNote> GetNotesByBeatIndex(int index)
-        {
-            return nFastChart.GetNotesByBeatIndex(index);
-        }
-
-
         [JsonProperty("META")]
         public PezMetadata PezMetadata { get; set; } = null;
 
@@ -50,23 +16,19 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
 
         [JsonProperty("BPMList")]
         public List<PezBpmEvent> BpmEvents { get; set; }
-
-        public void ConvertToNFastChart()
-        {
-            nFastChart = ToNFastChart();
-        }
-        private NFastPhiChart ToNFastChart()
+        
+        public PhiChart ToNFastChart()
         {
             // convert bpm events
             var bpmEvents = BpmEvents.Select(x => x.ToNFastEvent())
-                .OrderBy(x => x.Key.Beats).ToList();
+                .OrderBy(x => x.Key).ToList();
 
             // TODO: decouple event converting
 
             // convert lines/notes
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
-            var notesArray = new ChartNote[countOfNotes];
-            var linesArray = new ChartLine[JudgeLineList.Count];
+            var notesArray = new PhiNote[countOfNotes];
+            var linesArray = new PhiLine[JudgeLineList.Count];
             var countOfEvents = JudgeLineList.Sum(x => x.EventLayers?.Sum(y => y?.EventCount ?? 0) ?? 0);
             var eventsArray = new LineEvent[countOfEvents];
 
@@ -84,9 +46,6 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 events.CopyTo(eventsArray, eventIndex);
                 eventIndex += events.Length;
 
-                // make speed cache
-                line.LoadSpeedSegments(events.Where(x => x.Type == EventType.Speed).OrderBy(x => x.BeginTime.Beats));
-
                 // cast notes
                 if (judgeLine.Notes != null)
                 {
@@ -101,7 +60,7 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
             }
             
             // generate nfast chart
-            var chart = new NFastPhiChart()
+            var chart = new PhiChart()
             {
                 Metadata = PezMetadata.ToNFastMetadata(),
                 Notes = notesArray,
@@ -110,13 +69,6 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 LineEvents = eventsArray
             };
             return chart;
-        }
-
-        public void DropZipData()
-        {
-            files = null;
-            zipFile = null;
-            GC.Collect();
         }
     }
 
@@ -164,8 +116,8 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
         [JsonProperty("bpm")] public float Bpm;
         [JsonProperty("startTime")] public List<int> Time;
 
-        public KeyValuePair<ChartTimespan, float> ToNFastEvent()
-            => new(new ChartTimespan(Time), Bpm);
+        public KeyValuePair<float, float> ToNFastEvent()
+            => new(ChartTimespan.FromBeatsFraction(Time), Bpm);
     }
     public class PezLineEvent
     {
@@ -226,14 +178,14 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
                 default: throw new Exception($"Unknown easing function {EasingType}");
             }
         }
-        public LineEvent ToNFastEvent(uint lineId = 0, EventType type = EventType.Alpha)
+        public LineEvent ToNFastEvent(uint lineId = 0, LineEventType type = LineEventType.Alpha)
         {
             return new LineEvent()
             {
-                BeginTime = new ChartTimespan(StartTime),
+                BeginTime = ChartTimespan.FromBeatsFraction(StartTime),
                 BeginValue = Start,
                 EasingFuncRange = (EasingLeft, EasingRight),
-                EndTime = new ChartTimespan(EndTime),
+                EndTime = ChartTimespan.FromBeatsFraction(EndTime),
                 EndValue = End,
                 EasingFunc = ToNFastEasingFunction(),
                 Type = type,
@@ -263,24 +215,24 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
             var result = new List<LineEvent>();
             if (AlphaEvents != null)
             {
-                result.AddRange(AlphaEvents.Select(x => x.ToNFastEvent(lineId, EventType.Alpha)));
+                result.AddRange(AlphaEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.Alpha)));
             }
             if (MoveXEvents != null)
             {
-                result.AddRange(MoveXEvents.Select(x => x.ToNFastEvent(lineId, EventType.MoveX)));
+                result.AddRange(MoveXEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.MoveX)));
             }
             if (MoveYEvents != null)
             {
-                result.AddRange(MoveYEvents.Select(x => x.ToNFastEvent(lineId, EventType.MoveY)));
+                result.AddRange(MoveYEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.MoveY)));
             }
             if (RotateEvents != null)
             {
-                result.AddRange(RotateEvents.Select(x => x.ToNFastEvent(lineId, EventType.Rotate)));
+                result.AddRange(RotateEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.Rotate)));
             }
             if (SpeedEvents != null)
             {
                 result.AddRange(SpeedEvents.Select(x => { 
-                    var lineEvent = x.ToNFastEvent(lineId, EventType.Speed);
+                    var lineEvent = x.ToNFastEvent(lineId, LineEventType.Speed);
                     lineEvent.EasingFuncRange = (0, 1f);
                     lineEvent.EasingFunc = EasingFunction.Linear;
                     return lineEvent;
@@ -335,8 +287,8 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
         [JsonProperty("zOrder")]
         public int ZOrder { get; set; }
 
-        public ChartLine ToChartLine()
-            => new ChartLine { };
+        public PhiLine ToChartLine()
+            => new PhiLine { };
     }
     public class PezNote
     {
@@ -373,13 +325,13 @@ namespace Klrohias.NFast.PhiChartLoader.Pez
         [JsonProperty("yOffset")]
         public double YOffset { get; set; }
 
-        public ChartNote ToNFastNote(uint lineId = 0)
+        public PhiNote ToNFastNote(uint lineId = 0)
         {
             return new()
             {
                 LineId = lineId,
-                EndTime = new ChartTimespan(EndTime),
-                BeginTime = new ChartTimespan(StartTime),
+                EndTime = ChartTimespan.FromBeatsFraction(EndTime),
+                BeginTime = ChartTimespan.FromBeatsFraction(StartTime),
                 XPosition = PositionX,
                 ReverseDirection = Above == 0,
                 IsFakeNote = IsFake == 1,

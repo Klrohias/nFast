@@ -1,5 +1,5 @@
 ﻿using System;
-using Klrohias.NFast.PhiChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader;
 
 namespace Klrohias.NFast.Utilities
 {

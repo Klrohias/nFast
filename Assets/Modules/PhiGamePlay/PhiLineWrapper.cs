@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Klrohias.NFast.PhiChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader;
 using UnityEngine;
 
 namespace Klrohias.NFast.PhiGamePlay

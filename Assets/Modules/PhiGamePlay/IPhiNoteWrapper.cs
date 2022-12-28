@@ -1,10 +1,10 @@
-using Klrohias.NFast.PhiChartLoader.NFast;
+using Klrohias.NFast.PhiChartLoader;
 
 namespace Klrohias.NFast.PhiGamePlay
 {
     public interface IPhiNoteWrapper
     {
-        public void NoteStart(ChartNote note);
+        public void NoteStart(PhiNote note);
         public bool IsJudged { get; set; }
     }
 }
