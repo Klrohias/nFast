@@ -14,12 +14,14 @@ namespace Klrohias.NFast.PhiGamePlay
         public float PerfectJudgeRange = 80f;
         public float GoodJudgeRange = 150f;
         public float BadJudgeRange = 350f;
+        public bool Autoplay = false;
 
         private UnorderedList<PhiNote> _judgeNotes;
 
         private readonly UnorderedList<TouchDetail> _touches = new UnorderedList<TouchDetail>();
+        private readonly UnorderedList<PhiNote> _judgingHoldNotes = new UnorderedList<PhiNote>();
         private int _touchCount = 0; // update each frame
-
+        private float _currentTime = 0f;
         private const float NOTE_WIDTH = 2.5f * 0.88f;
         private class TouchDetail
         {
@@ -37,7 +39,46 @@ namespace Klrohias.NFast.PhiGamePlay
             // update touch detail
             _touchCount = Input.touchCount;
             UpdateTouchDetails();
+
+
+            _currentTime = Player.Timer.Time;
             ProcessJudgeNotes();
+
+            UpdateHoldNotes();
+        }
+
+        private void UpdateHoldNotes()
+        {
+            for (var i = 0; i < _judgingHoldNotes.Length; i++)
+            {
+                var item = _judgingHoldNotes[i];
+                if (item.EndTime <= Player.CurrentBeats)
+                {
+                    PutJudgeResult(item, PhiGamePlayer.JudgeResult.Perfect); // TODO: send right judge result
+                    continue;
+                }
+
+                if (!UpdateHoldNote(item))
+                {
+                    PutJudgeResult(item, PhiGamePlayer.JudgeResult.Miss);
+                }
+            }
+        }
+
+        private bool UpdateHoldNote(PhiNote note)
+        {
+            var lineId = note.LineId;
+            for (var j = 0; j < _touchCount; j++)
+            {
+                var touch = _touches[j];
+
+                if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
+                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+
+                return true;
+            }
+
+            return false;
         }
 
         private static Vector2 GetLandPos(Vector2 lineOrigin, float rotation, Vector2 touchPos)
@@ -82,54 +123,120 @@ namespace Klrohias.NFast.PhiGamePlay
                 touchDetail.LandDistances[index] = landPos;
             }
         }
-        
+
+        private void PutJudgeResult(PhiNote note, PhiGamePlayer.JudgeResult result)
+        {
+            Player.JudgeNotes.Remove(note);
+
+        }
+
+        private void ProcessDragNote(PhiNote note)
+        {
+            if (note.JudgeTime > _currentTime) return;
+            var lineId = note.LineId;
+            for (var i = 0; i < _touchCount; i++)
+            {
+                var touch = _touches[i];
+                if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
+                                _touches[i].LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+
+                PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
+                break;
+            }
+        }
+
+        private void ProcessTapNote(PhiNote note)
+        {
+            var lineId = note.LineId;
+            for (var i = 0; i < _touchCount; i++)
+            {
+                var touch = _touches[i];
+                if (touch.RawTouch.phase != TouchPhase.Began) continue;
+
+                if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
+                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+                
+                var range = MathF.Abs(_currentTime - note.JudgeTime);
+                if (range < PerfectJudgeRange) PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
+                else if (range < GoodJudgeRange) PutJudgeResult(note, PhiGamePlayer.JudgeResult.Good);
+                else if (range < BadJudgeRange) PutJudgeResult(note, PhiGamePlayer.JudgeResult.Bad);
+                break;
+            }
+        }
+
+        private void ProcessFlickNote(PhiNote note)
+        {
+            var lineId = note.LineId;
+            for (var j = 0; j < _touchCount; j++)
+            {
+                var touch = _touches[j];
+                if (touch.RawTouch.phase != TouchPhase.Moved) continue;
+
+                if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
+                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+
+                PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
+                break;
+            }
+        }
+
+        private void ProcessHoldNote(PhiNote note)
+        {
+            var lineId = note.LineId;
+            for (var j = 0; j < _touchCount; j++)
+            {
+                var touch = _touches[j];
+
+                if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
+                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+
+                _judgingHoldNotes.Add(note);
+                Player.JudgeNotes.Remove(note);
+                break;
+            }
+        }
+
+        private void ProcessJudgeNote(PhiNote note)
+        {
+            if (Autoplay && note.JudgeTime <= _currentTime)
+            {
+                PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
+                return;
+            }
+
+            switch (note.Type)
+            {
+                case NoteType.Tap:
+                    ProcessTapNote(note);
+                    break;
+                case NoteType.Flick:
+                    ProcessFlickNote(note);
+                    break;
+                case NoteType.Hold:
+                    ProcessHoldNote(note);
+                    break;
+                case NoteType.Drag:
+                    ProcessDragNote(note);
+                    break;
+            }
+        }
+
         private void ProcessJudgeNotes()
         {
-            var currentTime = Player.Timer.Time;
-            for (int i = 0; i < Player.JudgeNotes.Length; i++)
+            for (var i = 0; i < Player.JudgeNotes.Length; i++)
             {
                 var item = _judgeNotes[i];
 
-                if (item.JudgeTime - currentTime > BadJudgeRange) continue;
-
-                if (currentTime - item.JudgeTime > BadJudgeRange)
+                if (item.JudgeTime - _currentTime > BadJudgeRange) continue;
+                if (_currentTime - item.JudgeTime > BadJudgeRange)
                 {
-                    // TODO: miss
+                    PutJudgeResult(item, PhiGamePlayer.JudgeResult.Miss);
                     _judgeNotes.RemoveAt(i);
                     i--;
                     continue;
                 }
 
-                var lineId = item.LineId;
-
-                switch (item.Type)
-                {
-                    case NoteType.Tap:
-                    {
-                        break;
-                    }
-                    case NoteType.Flick:
-                    {
-                        break;
-                    }
-                    case NoteType.Hold:
-                    {
-                        break;
-                    }
-                    case NoteType.Drag:
-                    {
-                        if (item.JudgeTime > currentTime) continue;
-                        for (int j = 0; j < _touchCount; j++)
-                        {
-                            if (MathF.Abs(ScreenAdapter.ToGameXPos(item.XPosition) -
-                                          _touches[j].LandDistances[lineId]) < NOTE_WIDTH / 1.75f)
-                            {
-                                // TODO: perfect
-                            }
-                        }
-                        break;
-                    }
-                }
+                ProcessJudgeNote(item);
             }
         }
     }

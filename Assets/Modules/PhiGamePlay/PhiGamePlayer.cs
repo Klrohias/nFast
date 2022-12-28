@@ -71,6 +71,13 @@ namespace Klrohias.NFast.PhiGamePlay
         private int _currentMaxJudgeBeats = 0;
         private const int JUDGE_FUTURE_BEATS = 4;
 
+        public enum JudgeResult
+        {
+            Miss,
+            Bad,
+            Good,
+            Perfect
+        }
         public class GameStartInfo
         {
             public string Path = "";
