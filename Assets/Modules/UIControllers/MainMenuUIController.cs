@@ -15,7 +15,7 @@ namespace Klrohias.NFast.UIControllers
         {
             TestButton.onClick.AddListener(() =>
             {
-                NavigationService.Get().ExtraData = "H:/testchart.pez";
+                NavigationService.Get().ExtraData = "H:/Tan90_Full.pez";
                 NavigationService.Get().LoadScene("Scenes/PhiPlayScene");
             });
             var activation = tabGroup.GetFirstActiveToggle();

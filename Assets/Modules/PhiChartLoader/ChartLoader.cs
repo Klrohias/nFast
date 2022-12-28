@@ -1,8 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using ICSharpCode.SharpZipLib.Zip;
 using Klrohias.NFast.Resource;
 using Newtonsoft.Json;
 using MemoryPack;
@@ -36,7 +37,7 @@ namespace Klrohias.NFast.PhiChartLoader
         private static async Task<LoadResult> LoadPezChart(LoadContext context)
         {
             var result = new LoadResult();
-            var zipFile = new ZipFile(context.Path);
+            var zipFile = ZipFile.OpenRead(context.Path);
             var resourceProvider = new ZipResourceProvider(null, zipFile);
 
             // parse info.txt
@@ -73,7 +74,7 @@ namespace Klrohias.NFast.PhiChartLoader
         private static async Task<LoadResult> LoadNFastChart(LoadContext context)
         {
             var result = new LoadResult();
-            var zipFile = new ZipFile(context.Path);
+            var zipFile = ZipFile.OpenRead(context.Path);
             var resourceProvider = new ZipResourceProvider(null, zipFile);
 
             var stream = await resourceProvider.GetStreamResource(NFAST_CHART);
@@ -121,17 +122,18 @@ namespace Klrohias.NFast.PhiChartLoader
             if (File.Exists(outputPath)) return outputPath;
 
             var loadResult = await LoadChartAsync(path, null);
-            var outStream = File.OpenWrite(cacheOutput);
-            await MemoryPackSerializer.SerializeAsync(outStream, loadResult.Chart);
-            await outStream.FlushAsync();
-            outStream.Close();
+
+            UnityEngine.Debug.Log(
+                $"NoteCount: {loadResult.Chart.Notes.Length}\nEventCount: {loadResult.Chart.LineEvents.Length}\nJudgeNoteCount: {loadResult.Chart.Notes.Count(x => !x.IsFakeNote)}");
+
+            var cacheStream = File.OpenWrite(cacheOutput);
+            await MemoryPackSerializer.SerializeAsync(cacheStream, loadResult.Chart);
+            await cacheStream.FlushAsync();
+            cacheStream.Close();
 
             File.Copy(path, outputPath);
-            var zipFile = new ZipFile(outputPath);
-            zipFile.BeginUpdate();
-            zipFile.Add(new StaticDiskDataSource(cacheOutput), NFAST_CHART);
-            zipFile.CommitUpdate();
-            zipFile.Close();
+            using var zipFile = ZipFile.Open(outputPath, ZipArchiveMode.Update);
+            zipFile.CreateEntryFromFile(cacheOutput, NFAST_CHART, CompressionLevel.Optimal);
 
             File.Delete(cacheOutput);
 

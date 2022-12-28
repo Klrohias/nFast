@@ -26,15 +26,16 @@ namespace Klrohias.NFast.Tween
         }
 
         private UnorderedList<Tween> _tweens = new();
-        private SystemTimer _timer = new SystemTimer();
+        public SystemTimer Timer { get; } = new SystemTimer();
+
         private void Awake()
         {
-            _timer.Reset();
+            Timer.Reset();
         }
 
         private void Update()
         {
-            var time = _timer.Time;
+            var time = Timer.Time;
             for (int i = 0; i < _tweens.Length; i++)
             {
                 var tween = _tweens[i];
@@ -69,7 +70,7 @@ namespace Klrohias.NFast.Tween
             float beginValue = 0f,
             float endValue = 1f)
         {
-            var time = _timer.Time;
+            var time = Timer.Time;
             var tween = new Tween()
             {
                 BeginTime = time,

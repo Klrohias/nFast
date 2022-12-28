@@ -39,6 +39,13 @@ namespace Klrohias.NFast.Utilities
             }
         }
 
+        public void WarmUp(int target)
+        {
+            while (target > objects.Count)
+            {
+                RequestNewObject();
+            }
+        }
         public GameObject RequestObject()
         {
             // find object

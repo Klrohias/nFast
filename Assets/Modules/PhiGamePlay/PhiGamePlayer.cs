@@ -9,6 +9,7 @@ using UnityEngine;
 using Klrohias.NFast.Native;
 using Klrohias.NFast.UIComponent;
 using Klrohias.NFast.Resource;
+using Klrohias.NFast.Tween;
 using Debug = UnityEngine.Debug;
 
 namespace Klrohias.NFast.PhiGamePlay
@@ -112,8 +113,8 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             var cachePath = OSService.Get().CachePath;
 
-            // var path = await ChartLoader.ToNFastChart(filePath);
-            var path = filePath;
+            var path = await ChartLoader.ToNFastChart(filePath);
+            // var path = filePath;
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             var loadResult = await ChartLoader.LoadChartAsync(path, cachePath);
@@ -169,15 +170,6 @@ namespace Klrohias.NFast.PhiGamePlay
                 return obj;
             }, 5);
 
-            // play animation
-            await MetadataDisplay.Display(string.Join('\n', "Name: " + _chart.Metadata.Name,
-                "Difficulty: " + _chart.Metadata.Level,
-                "Composer: " + _chart.Metadata.Composer, "Charter: " + _chart.Metadata.Charter));
-
-            // start timer
-            Timer = new SystemTimer();
-            Timer.Reset();
-
             // get first bpm event
             _bpmEventGenerator = _chart.GetBpmEvents();
             _bpmEventGenerator.MoveNext();
@@ -201,8 +193,28 @@ namespace Klrohias.NFast.PhiGamePlay
             // notes
             _notes.AddRange(_chart.GetNotes());
 
+            // warm up
+            if (_notes.Length > 1000)
+            {
+                Debug.Log("too many notes, warming up");
+                await Tweener.Get().RunTween(2000f, (val) =>
+                {
+                    _notePool.WarmUp(Convert.ToInt32(val));
+                }, beginValue: 0f, endValue: MathF.Min(10240f, _notes.Length / 5f));
+            }
+
             // events
             _eventsGenerator = _chart.GetEvents();
+
+            // play animation
+            await MetadataDisplay.Display(string.Join('\n', "Name: " + _chart.Metadata.Name,
+                "Difficulty: " + _chart.Metadata.Level,
+                "Composer: " + _chart.Metadata.Composer, "Charter: " + _chart.Metadata.Charter));
+
+
+            // start timer
+            Timer = new SystemTimer();
+            Timer.Reset();
 
             // enable services and threads
             GameRunning = true;
@@ -328,15 +340,18 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void FetchNewNotes()
         {
-            for (int i = 0; i < _notes.Length; i++)
+            lock (_newNotes)
             {
-                var note = _notes[i]; 
-                var yOffset = note.YPosition - Lines[(int) note.LineId].YPosition;
-                if (yOffset <= 25f && yOffset >= 0)
+                for (int i = 0; i < _notes.Length; i++)
                 {
-                    _newNotes.Enqueue(note);
-                    _notes.RemoveAt(i);
-                    i--;
+                    var note = _notes[i];
+                    var yOffset = note.YPosition - Lines[(int)note.LineId].YPosition;
+                    if (yOffset <= 25f && yOffset >= 0)
+                    {
+                        _newNotes.Enqueue(note);
+                        _notes.RemoveAt(i);
+                        i--;
+                    }
                 }
             }
         }

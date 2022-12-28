@@ -130,7 +130,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void PutJudgeResult(PhiNote note, PhiGamePlayer.JudgeResult result)
         {
-            Player.JudgeNotes.Remove(note);
+            _judgeNotes.Remove(note);
             Debug.Log($"note judge {result}");
         }
 
@@ -202,7 +202,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 if (judgeResult == PhiGamePlayer.JudgeResult.Miss) break;
 
                 _judgingHoldNotes.Add(new Tuple<PhiNote, PhiGamePlayer.JudgeResult>(note, PhiGamePlayer.JudgeResult.Miss));
-                Player.JudgeNotes.Remove(note);
+                _judgeNotes.Remove(note);
                 break;
             }
         }
@@ -234,20 +234,21 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessJudgeNotes()
         {
-            for (var i = 0; i < Player.JudgeNotes.Length; i++)
+            lock (_judgeNotes)
             {
-                var item = _judgeNotes[i];
-
-                if (item.JudgeTime - _currentTime > BadJudgeRange) continue;
-                if (_currentTime - item.JudgeTime > BadJudgeRange)
+                for (var i = 0; i < _judgeNotes.Length; i++)
                 {
-                    PutJudgeResult(item, PhiGamePlayer.JudgeResult.Miss);
-                    _judgeNotes.RemoveAt(i);
-                    i--;
-                    continue;
-                }
+                    var item = _judgeNotes[i];
 
-                ProcessJudgeNote(item);
+                    if (item.JudgeTime - _currentTime > BadJudgeRange) continue;
+                    if (_currentTime - item.JudgeTime > BadJudgeRange)
+                    {
+                        PutJudgeResult(item, PhiGamePlayer.JudgeResult.Miss);
+                        continue;
+                    }
+
+                    ProcessJudgeNote(item);
+                }
             }
         }
     }

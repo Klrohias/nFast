@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
-using ICSharpCode.SharpZipLib.Zip;
 
 namespace Klrohias.NFast.Resource
 {
@@ -9,20 +9,20 @@ namespace Klrohias.NFast.Resource
     {
         public string CachePath { get; set; }
 
-        private readonly ZipFile _zipFile;
-        public ZipResourceProvider(string cachePath, ZipFile zipFile)
+        private readonly ZipArchive _zipFile;
+        public ZipResourceProvider(string cachePath, ZipArchive zipFile)
         {
             CachePath = cachePath;
             _zipFile = zipFile;
         }
 
-        private ZipEntry GetZipEntry(string path)
+        private ZipArchiveEntry GetZipEntry(string path)
             => _zipFile.GetEntry(path) ?? 
                throw new FileNotFoundException($"File '{path}' not found", path);
 
         public Task<Stream> GetStreamResource(string id)
         {
-            return Task.FromResult(_zipFile.GetInputStream(GetZipEntry(id)));
+            return Task.FromResult(GetZipEntry(id).Open());
         }
 
         public async Task<string> GetResourcePath(string id)
