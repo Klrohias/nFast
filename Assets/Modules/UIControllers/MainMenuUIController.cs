@@ -1,5 +1,8 @@
+using System;
+using Klrohias.NFast.Native;
 using Klrohias.NFast.Navigation;
 using Klrohias.NFast.PhiGamePlay;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,20 +11,32 @@ namespace Klrohias.NFast.UIControllers
     public class MainMenuUIController : MonoBehaviour
     {
         public Button TestButton;
-        public ToggleGroup tabGroup;
-        public GameObject[] views;
-
-        void Start()
+        [Serializable]
+        public struct LocalImportProperties
         {
-            TestButton.onClick.AddListener(() =>
-            {
-                NavigationService.Get().ExtraData = "H:/Tan90_Full.pez";
-                NavigationService.Get().LoadScene("Scenes/PhiPlayScene");
-            });
-            var activation = tabGroup.GetFirstActiveToggle();
-            var index = activation.transform.GetSiblingIndex();
-            for (int i = 0; i < views.Length; i++)
-                views[i].SetActive(i == index);
+            public Button BrowseButton;
+            public Button ImportButton;
+            public TMP_InputField PathInput;
+        }
+        public LocalImportProperties LocalImport;
+        private void Start()
+        {
+            LocalImport.BrowseButton.onClick.AddListener(BrowseImportFile);
+            LocalImport.ImportButton.onClick.AddListener(ImportFile);
+        }
+
+        private void ImportFile()
+        {
+            throw new NotImplementedException();
+        }
+
+        private async void BrowseImportFile()
+        {
+            var fps = FilePickerService.Get();
+            fps.Filter = ".nfp.pez.zip.pgm";
+            fps.CurrentDirectory = OSService.Get().DataPath;
+            fps.Open();
+            LocalImport.PathInput.text = await fps.GetSelectedFile() ?? "";
         }
     }
 }

@@ -131,7 +131,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private void PutJudgeResult(PhiNote note, PhiGamePlayer.JudgeResult result)
         {
             _judgeNotes.Remove(note);
-            Debug.Log($"note judge {result}");
+            // Debug.Log($"note judge {result}");
         }
 
         private void ProcessDragNote(PhiNote note)

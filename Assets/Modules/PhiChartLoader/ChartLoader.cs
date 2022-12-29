@@ -107,6 +107,8 @@ namespace Klrohias.NFast.PhiChartLoader
             {
                 case ".pez": return LoadPezChart(ctx);
                 case ".nfp": return LoadNFastChart(ctx);
+                case ".zip": return LoadPezChart(ctx);
+                case ".pgm": return null; // in plan, not supported now
             }
             throw new ArgumentOutOfRangeException($"Unknown file type '{ext ?? "undefined"}");
         }

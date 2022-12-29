@@ -39,12 +39,12 @@ namespace Klrohias.NFast.Tween
             for (int i = 0; i < _tweens.Length; i++)
             {
                 var tween = _tweens[i];
-                if(tween.BeginTime> time) continue;
+                if (tween.BeginTime > time) continue;
                 if (time >= tween.EndTime)
                 {
                     tween.Update(tween.EndValue);
                     tween.Finish();
-                    _tweens.Remove(tween);
+                    _tweens.RemoveAt(i);
                     i--;
                     continue;
                 }
@@ -81,6 +81,11 @@ namespace Klrohias.NFast.Tween
             };
             tween.OnUpdate += action;
             return RunTween(tween);
+        }
+
+        public void Remove(Tween tween)
+        {
+            _tweens.Remove(tween);
         }
     }
 }

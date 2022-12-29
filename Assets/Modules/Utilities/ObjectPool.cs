@@ -84,5 +84,18 @@ namespace Klrohias.NFast.Utilities
             gameObject.SetActive(false);
             lendObjectBitmap[i] &= (byte) ~(0b1 << k);
         }
+
+        public void ReturnAll()
+        {
+            for (var i = 0; i < lendObjectBitmap.Length; i++)
+            {
+                lendObjectBitmap[i] = 0;
+            }
+
+            foreach (var gameObject in objects)
+            {
+                gameObject.SetActive(false);
+            }
+        }
     }
 }

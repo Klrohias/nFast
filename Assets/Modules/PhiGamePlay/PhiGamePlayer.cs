@@ -10,6 +10,7 @@ using Klrohias.NFast.Native;
 using Klrohias.NFast.UIComponent;
 using Klrohias.NFast.Resource;
 using Klrohias.NFast.Tween;
+using TMPro.SpriteAssetUtilities;
 using Debug = UnityEngine.Debug;
 
 namespace Klrohias.NFast.PhiGamePlay
@@ -194,10 +195,10 @@ namespace Klrohias.NFast.PhiGamePlay
             _notes.AddRange(_chart.GetNotes());
 
             // warm up
-            if (_notes.Length > 1000)
+            if (_notes.Length > 4096)
             {
                 Debug.Log("too many notes, warming up");
-                await Tweener.Get().RunTween(2000f, (val) =>
+                await Tweener.Get().RunTween(5000f, (val) =>
                 {
                     _notePool.WarmUp(Convert.ToInt32(val));
                 }, beginValue: 0f, endValue: MathF.Min(10240f, _notes.Length / 5f));

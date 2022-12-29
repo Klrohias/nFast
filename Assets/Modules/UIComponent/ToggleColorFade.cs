@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Klrohias.NFast.Tween;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Klrohias.NFast.Utilities
@@ -11,18 +12,18 @@ namespace Klrohias.NFast.Utilities
         [SerializeField] private Color onColor;
         [SerializeField] private float duration;
 
-        private void Awake()
+        private void Start()
         {
             var toggle = GetComponent<Toggle>();
-            foreach (Graphic graphic in graphics)
-                graphic.canvasRenderer.SetColor(toggle.isOn ? onColor : offColor);
+            OnToggleValueChanged(toggle.isOn);
             toggle.onValueChanged.AddListener(OnToggleValueChanged);
         }
 
         private void OnToggleValueChanged(bool isOn)
         {
             foreach (Graphic graphic in graphics)
-                graphic.CrossFadeColor(isOn ? onColor : offColor, duration, true, true);
+                graphic.NTweenColor(duration * 1000f, EasingFunction.SineIn
+                    , graphic.color, isOn ? onColor : offColor);
         }
     }
 }
