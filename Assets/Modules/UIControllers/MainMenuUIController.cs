@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using Klrohias.NFast.Native;
 using Klrohias.NFast.Navigation;
 using Klrohias.NFast.PhiGamePlay;
+using Klrohias.NFast.Utilities;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,9 +27,36 @@ namespace Klrohias.NFast.UIControllers
             LocalImport.ImportButton.onClick.AddListener(ImportFile);
         }
 
-        private void ImportFile()
+        private async void ImportFile()
         {
-            throw new NotImplementedException();
+            var path = LocalImport.PathInput.text;
+            if (!File.Exists(path))
+            {
+                ToastService.Get().Show(ToastService.ToastType.Failure,"路径可能有误\n文件不存在");
+                return;
+            }
+
+            LocalImport.ImportButton.interactable = false;
+
+            var fileName = Path.GetFileName(path);
+            var ext = Path.GetExtension(path);
+            if (ext == ".nfp")
+            {
+                await Async.RunOnThread(() =>
+                {
+                    File.Copy(path, 
+                        Path.Combine(OSService.Get().ChartPath, fileName));
+                });
+            }
+            else
+            {
+                fileName = Path.GetFileNameWithoutExtension(path) + ".nfp";
+                await PhiChartLoader.ChartLoader.ToNFastChart(path, OSService.Get().CachePath,
+                    Path.Combine(OSService.Get().ChartPath, fileName));
+            }
+            ToastService.Get().Show(ToastService.ToastType.Success, "导入成功");
+
+            LocalImport.ImportButton.interactable = true;
         }
 
         private async void BrowseImportFile()

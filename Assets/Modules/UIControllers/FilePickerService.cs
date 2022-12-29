@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Klrohias.NFast.Assets.Modules.UIComponent;
+using Klrohias.NFast.UIComponent;
 using Klrohias.NFast.Tween;
 using Klrohias.NFast.Utilities;
 using TMPro;

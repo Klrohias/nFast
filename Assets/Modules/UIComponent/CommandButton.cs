@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Klrohias.NFast.Assets.Modules.UIComponent
+namespace Klrohias.NFast.UIComponent
 {
     [RequireComponent(typeof(Button))]
     public class CommandButton : MonoBehaviour

@@ -68,8 +68,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Button
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 399c35a6917db68448f77f087e56e28e, type: 2}
-  m_sharedMaterial: {fileID: -6992816599979752595, guid: 399c35a6917db68448f77f087e56e28e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 903dfd334f74d834fa0b2b396130a00f, type: 2}
+  m_sharedMaterial: {fileID: -962870057165905957, guid: 903dfd334f74d834fa0b2b396130a00f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -93,8 +93,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 56
-  m_fontSizeBase: 56
+  m_fontSize: 48
+  m_fontSizeBase: 48
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

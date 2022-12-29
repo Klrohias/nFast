@@ -113,21 +113,15 @@ namespace Klrohias.NFast.PhiChartLoader
             throw new ArgumentOutOfRangeException($"Unknown file type '{ext ?? "undefined"}");
         }
 
-        public static async Task<string> ToNFastChart(string path)
+        public static async Task<string> ToNFastChart(string path,string cachePath, string outputPath)
         {
             // TODO: custom output path, etc.
-            var outputDir = Path.GetDirectoryName(path);
-            var outputFile = Path.GetFileNameWithoutExtension(path) + ".nfp";
-            var outputPath = Path.Combine(outputDir, outputFile);
-            var cacheOutput = Path.Combine(outputDir, NFAST_CHART);
+            var cacheOutput = Path.Combine(cachePath, NFAST_CHART);
 
             if (File.Exists(outputPath)) return outputPath;
 
             var loadResult = await LoadChartAsync(path, null);
-
-            UnityEngine.Debug.Log(
-                $"NoteCount: {loadResult.Chart.Notes.Length}\nEventCount: {loadResult.Chart.LineEvents.Length}\nJudgeNoteCount: {loadResult.Chart.Notes.Count(x => !x.IsFakeNote)}");
-
+            
             var cacheStream = File.OpenWrite(cacheOutput);
             await MemoryPackSerializer.SerializeAsync(cacheStream, loadResult.Chart);
             await cacheStream.FlushAsync();

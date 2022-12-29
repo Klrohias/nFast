@@ -114,11 +114,8 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             var cachePath = OSService.Get().CachePath;
 
-            var path = await ChartLoader.ToNFastChart(filePath);
-            // var path = filePath;
-
             Stopwatch stopwatch = Stopwatch.StartNew();
-            var loadResult = await ChartLoader.LoadChartAsync(path, cachePath);
+            var loadResult = await ChartLoader.LoadChartAsync(filePath, cachePath);
             _resourceProvider = loadResult.ResourceProvider;
             _chart = loadResult.Chart;
             
