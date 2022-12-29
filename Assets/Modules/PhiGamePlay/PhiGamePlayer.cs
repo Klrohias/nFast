@@ -10,7 +10,7 @@ using Klrohias.NFast.Native;
 using Klrohias.NFast.UIComponent;
 using Klrohias.NFast.Resource;
 using Klrohias.NFast.Tween;
-using TMPro.SpriteAssetUtilities;
+using Klrohias.NFast.UIControllers;
 using Debug = UnityEngine.Debug;
 
 namespace Klrohias.NFast.PhiGamePlay
@@ -194,7 +194,7 @@ namespace Klrohias.NFast.PhiGamePlay
             // warm up
             if (_notes.Length > 4096)
             {
-                Debug.Log("too many notes, warming up");
+                ToastService.Get().Show(ToastService.ToastType.Success, "Ô¤ÈÈÖÐ...");
                 await Tweener.Get().RunTween(5000f, (val) =>
                 {
                     _notePool.WarmUp(Convert.ToInt32(val));

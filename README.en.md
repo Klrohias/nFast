@@ -8,7 +8,7 @@ An open-source simulator of Phigros. Despite calling it a simulator, the origina
 
 # Contribution
 Welcome to open Pull Requests.  
-The Unity version we are using is `2021.3.6f1`.  
+The Unity version we are using is `2022.2.1f1`.  
 
 # Donate
 Instead of sponsoring us, how about sponsoring Pigeon Games: [💵 Pigeon Games' Afdian (爱发电)](https://afdian.net/a/pigeongames)  

@@ -4,21 +4,22 @@ using Klrohias.NFast.Navigation;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PlayUIController : MonoBehaviour
+namespace Klrohias.NFast.UIControllers
 {
-    // Start is called before the first frame update
-    public Button BackButton;
-    void Start()
+    public class PlayUIController : MonoBehaviour
     {
-        BackButton.onClick.AddListener(() =>
-        {
-            NavigationService.Get().Back();
-        });
-    }
+        // Start is called before the first frame update
+        public Button BackButton;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        void Start()
+        {
+            BackButton.onClick.AddListener(() => { NavigationService.Get().Back(); });
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+
+        }
     }
 }

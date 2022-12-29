@@ -8,7 +8,7 @@
 
 # 贡献
 欢迎给这个Repo提起Pull Request捏。
-我们使用的Unity版本是`2021.3.6f1`。
+我们使用的Unity版本是 `2022.2.1f1`。
 
 # 赞助
 与其给我们打钱，不如去给鸽游打点钱捏：[💵 鸽游的爱发电](https://afdian.net/a/pigeongames)  
