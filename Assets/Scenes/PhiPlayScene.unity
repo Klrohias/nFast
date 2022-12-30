@@ -253,8 +253,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b817952ae116b694289f5b854bd48a4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GameVirtualResolutionWidth: 625
-  GameVirtualResolutionHeight: 440
+  GameVirtualResolutionWidth: 675
+  GameVirtualResolutionHeight: 379.6875
   ViewportSize: 10
 --- !u!1 &192471187
 GameObject:
@@ -1142,6 +1142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ab15fdc22a88ab4ba96270550d4b8a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _currentBeats: 0
   BackgroundTransform: {fileID: 694944722}
   BackgroundImages:
   - {fileID: 538345411}
