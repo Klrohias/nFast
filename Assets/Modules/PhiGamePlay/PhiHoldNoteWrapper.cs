@@ -12,8 +12,8 @@ namespace Klrohias.NFast.PhiGamePlay
         public Transform BottomHead;
         public Transform Body;
         private PhiNote _note;
-        internal PhiGamePlayer Player;
-        private PhiLine _line;
+        [HideInInspector] public PhiGamePlayer Player { get; set; }
+        private PhiUnit _unit;
         private const float BODY_HEIGHT = 0.04f;
         private const float Y_SCALE = 2.5f;
         private float _noteLast = 0f;
@@ -22,7 +22,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private void Update()
         {
             if (!_isRunning) return;
-            if (Player.CurrentBeats >= _note.EndTime + (!IsJudged ? _noteLast : 0f))
+            if (Player.CurrentBeats >= _note.EndBeats + (!IsJudged ? _noteLast : 0f))
             {
                 _isRunning = false;
                 Player.OnNoteFinalize(this);
@@ -30,7 +30,7 @@ namespace Klrohias.NFast.PhiGamePlay
             }
 
             var localPos = transform.localPosition;
-            var newPosY = _note.NoteHeight - _line.YPosition + _yOffset;
+            var newPosY = _note.NoteHeight - _unit.YPosition + _yOffset;
             localPos.y = newPosY;
             transform.localPosition = localPos;
         }
@@ -39,8 +39,8 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             _isRunning = true;
             this._note = note;
-            this._line = Player.Lines[(int)note.LineId];
-            this._noteLast = note.EndTime - note.BeginTime;
+            this._unit = Player.Units[(int)note.UnitObjectId];
+            this._noteLast = note.EndBeats - note.BeginBeats;
             this._yOffset = Player.ScreenAdapter.ToGameYPos(note.YPosition);
             transform.localRotation = PhiNoteWrapper.ZeroRotation;
             BottomHead.localPosition = Vector3.zero;

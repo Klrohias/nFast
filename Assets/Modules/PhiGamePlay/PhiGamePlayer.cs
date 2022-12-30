@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -27,10 +27,10 @@ namespace Klrohias.NFast.PhiGamePlay
         private int _lastBeatCount = -1;
         public float CurrentBeats => _currentBeats;
         [SerializeField] private float _currentBeats = 0f;
-        private KeyValuePair<float, float> _nextBpmEvent;
+        private BpmEvent _nextBpmEvent;
         private float _currentBpm = 0f;
         private float _beatLast = 0f;
-        private IEnumerator<KeyValuePair<float, float>> _bpmEventGenerator;
+        private IEnumerator<BpmEvent> _bpmEventGenerator;
         private readonly ThreadDispatcher _dispatcher = new ThreadDispatcher();
         private readonly Queue<PhiNote> _newNotes = new Queue<PhiNote>();
 
@@ -39,13 +39,14 @@ namespace Klrohias.NFast.PhiGamePlay
         private float _musicLength = 0f; // unit: second
 
         // events
-        private readonly UnorderedList<LineEvent> _runningEvents = new UnorderedList<LineEvent>();
-        private IEnumerator<IList<LineEvent>> _eventsGenerator;
+        private readonly UnorderedList<UnitEvent> _runningEvents = new UnorderedList<UnitEvent>();
+        private IEnumerator<IList<UnitEvent>> _eventsGenerator;
 
         // unity resources
         public Transform BackgroundTransform;
         public SpriteRenderer[] BackgroundImages;
         public GameObject JudgeLinePrefab;
+        public GameObject AttachUIUnitPrefab;
         public GameObject NotePrefab;
         public GameObject HoldNotePrefab;
         public ChartMetadataDisplay MetadataDisplay;
@@ -57,10 +58,9 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private Texture2D _coverTexture = null;
         private AudioClip _audioClip = null;
-        
-        private static readonly Vector2 LineDefaultScale = new Vector2(50f, 0.1f);
 
         // object pools
+        private ObjectPool _attachUiPool;
         private ObjectPool _linePool;
         private ObjectPool _notePool;
         private ObjectPool _holdNotePool;
@@ -68,9 +68,9 @@ namespace Klrohias.NFast.PhiGamePlay
         // chart data
         private IResourceProvider _resourceProvider;
         private PhiChart _chart;
-        internal IList<PhiLine> Lines;
-        internal readonly List<GameObject> LineObjects = new List<GameObject>();
-        private readonly List<PhiLineWrapper> _lineWrappers = new List<PhiLineWrapper>();
+        internal IList<PhiUnit> Units;
+        internal readonly List<GameObject> UnitObjects = new List<GameObject>();
+        private readonly List<IPhiUnitWrapper> _unitWrappers = new List<IPhiUnitWrapper>();
         private readonly UnorderedList<PhiNote> _notes = new UnorderedList<PhiNote>();
 
         // judge
@@ -144,16 +144,20 @@ namespace Klrohias.NFast.PhiGamePlay
                 $"load cover and audio files: {stopwatch.ElapsedMilliseconds} ms");
         }
 
-        async void GameBegin()
+        private void InitPools()
         {
-            Debug.Log("game begin");
-
-            // create pools
             _linePool = new(() =>
             {
                 var obj = Instantiate(JudgeLinePrefab);
                 obj.name += " [Pooled]";
-                obj.transform.localScale = ScreenAdapter.ScaleVector3(obj.transform.localScale);
+                obj.GetComponent<PhiLineWrapper>().Player = this;
+                return obj;
+            }, 5);
+
+            _attachUiPool = new(() =>
+            {
+                var obj = Instantiate(AttachUIUnitPrefab);
+                obj.name += " [Pooled]";
                 return obj;
             }, 5);
 
@@ -172,42 +176,51 @@ namespace Klrohias.NFast.PhiGamePlay
                 obj.GetComponent<PhiHoldNoteWrapper>().Player = this;
                 return obj;
             }, 5);
+        }
+
+        async void GameBegin()
+        {
+            Debug.Log("game begin");
+
+            InitPools();
 
             // get first bpm event
-            _bpmEventGenerator = _chart.GetBpmEvents();
+            _bpmEventGenerator = _chart.BpmEvents.GetEnumerator();
             _bpmEventGenerator.MoveNext();
             _nextBpmEvent = _bpmEventGenerator.Current;
 
             // music
             _musicLength = _audioClip.length;
 
-            // generate lines
-            Lines = _chart.GetLines();
-            for (int i = 0; i < Lines.Count; i++)
+            // generate units
+            Units = _chart.Units;
+            for (int i = 0; i < Units.Count; i++)
             {
-                var obj = _linePool.RequestObject();
-                obj.name += $"(LineId: {i})";
-                LineObjects.Add(obj);
-                _lineWrappers.Add(obj.GetComponent<PhiLineWrapper>());
+                var obj = CreateUnitObject(Units[i]);
+                obj.name += $"(UnitId: {i})";
                 obj.SetActive(true);
+                var unitWrapper = _unitWrappers[i];
+                if (unitWrapper != null) unitWrapper.Unit = Units[i];
+
+                UnitObjects.Add(obj);
             }
-            for (int i = 0; i < Lines.Count; i++)
+            for (int i = 0; i < Units.Count; i++)
             {
-                var item = Lines[i];
-                var parentLineId = item.ParentLineId;
+                var item = Units[i];
+                var parentLineId = item.ParentObjectId;
                 if (parentLineId == -1) continue;
-                LineObjects[i].transform.SetParent(LineObjects[parentLineId].transform, true);
+                UnitObjects[i].transform.SetParent(UnitObjects[parentLineId].transform, true);
             }
 
-            _landDistances = new float[Lines.Count];
+            _landDistances = new float[Units.Count];
 
             // notes
-            _notes.AddRange(_chart.GetNotes());
+            _notes.AddRange(_chart.Notes);
 
             // warm up
             if (_notes.Length > 4096)
             {
-                ToastService.Get().Show(ToastService.ToastType.Success, "Ô¤ÈÈÖÐ...");
+                ToastService.Get().Show(ToastService.ToastType.Success, "é¢„çƒ­ä¸­...");
                 await Tweener.Get().RunTween(5000f, (val) =>
                 {
                     _notePool.WarmUp(Convert.ToInt32(val));
@@ -237,7 +250,35 @@ namespace Klrohias.NFast.PhiGamePlay
             BgmAudioSource.PlayOneShot(_audioClip);
         }
 
-        private IList<LineEvent>[] eventsChunks = new IList<LineEvent>[24];
+        private GameObject CreateUnitObject(PhiUnit unit)
+        {
+            switch (unit.Type)
+            {
+                case PhiUnitType.Line:
+                {
+                    var obj = _linePool.RequestObject();
+                    _unitWrappers.Add(obj.GetComponent<PhiLineWrapper>());
+                    return obj;
+                }
+                case PhiUnitType.AttachUI:
+                {
+                    var obj = _attachUiPool.RequestObject();
+                    _unitWrappers.Add(null);
+                    return obj;
+                }
+                case PhiUnitType.Text:
+                {
+                    // TODO: Add TextUnitPrefab
+                    var obj = _attachUiPool.RequestObject();
+                    _unitWrappers.Add(null);
+                    return obj;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private IList<UnitEvent>[] eventsChunks = new IList<UnitEvent>[24];
         private int eventsChunksBegin = 0;
 
         private void BeatUpdate()
@@ -270,78 +311,18 @@ namespace Klrohias.NFast.PhiGamePlay
         }
 
        
-        private void DoLineEvent(LineEvent lineEvent, float beat)
+        private void DoUnitEvent(UnitEvent unitEvent, float beat)
         {
-            var last = lineEvent.EndTime - lineEvent.BeginTime;
-            var easingX = (beat - lineEvent.BeginTime) / last;
+            var last = unitEvent.EndBeats - unitEvent.BeginBeats;
+            var easingX = (beat - unitEvent.BeginBeats) / last;
             easingX = Mathf.Clamp(easingX, 0, 1);
             var easingY = EasingFunctions.Invoke(
-                lineEvent.EasingFunc, easingX
-                , lineEvent.EasingFuncRange.Low,
-                lineEvent.EasingFuncRange.High);
-            var value = lineEvent.BeginValue + (lineEvent.EndValue - lineEvent.BeginValue) * easingY;
-
-            var lineId = (int) lineEvent.LineId;
-            var lineObj = _lineWrappers[lineId];
-
-
-            switch (lineEvent.Type)
-            {
-                case LineEventType.Alpha:
-                {
-                    lineObj.SetAlpha(value / 255f);
-                    break;
-                }
-                case LineEventType.MoveX:
-                {
-                    var transform = lineObj.transform;
-                    var pos = transform.localPosition;
-                    pos.x = ScreenAdapter.ToGameXPos(value);
-                    transform.localPosition = pos;
-                    break;
-                }
-                case LineEventType.MoveY:
-                {
-                    var transform = lineObj.transform;
-                    var pos = transform.localPosition;
-                    pos.y = ScreenAdapter.ToGameYPos(value);
-                    transform.localPosition = pos;
-                    break;
-                }
-                case LineEventType.Rotate:
-                {
-                    var transform = lineObj.transform;
-                    transform.localRotation = Quaternion.Euler(0, 0, -value);
-                    Lines[lineId].Rotation = -value / 180f * MathF.PI;
-                    break;
-                }
-                case LineEventType.Speed:
-                {
-                    Lines[lineId].Speed = value;
-                    break;
-                }
-                case LineEventType.ScaleX:
-                {
-                    var transform = lineObj.LineBody.transform;
-                    var scale = transform.localScale;
-                    scale.x = LineDefaultScale.x * value;
-                    transform.localScale = scale;
-                    break;
-                }
-                case LineEventType.ScaleY:
-                {
-                    var transform = lineObj.LineBody.transform;
-                    var scale = transform.localScale;
-                    scale.y = LineDefaultScale.y * value;
-                    transform.localScale = scale;
-                    break;
-                }
-                default:
-                {
-                    $"Unsupported event {lineEvent.Type}".Log();
-                    break;
-                }
-            }
+                unitEvent.EasingFunc, easingX
+                , unitEvent.EasingFuncRange.Low,
+                unitEvent.EasingFuncRange.High);
+            var value = unitEvent.BeginValue + (unitEvent.EndValue - unitEvent.BeginValue) * easingY;
+            var unitObj = _unitWrappers[(int)unitEvent.LineId];
+            unitObj?.DoEvent(unitEvent.Type, value);
         }
 
         private void ProcessLineEvents()
@@ -349,22 +330,22 @@ namespace Klrohias.NFast.PhiGamePlay
             for (int i = 0; i < _runningEvents.Length; i++)
             {
                 var item = _runningEvents[i];
-                if (item.BeginTime > _currentBeats) continue;
-                if (_currentBeats > item.EndTime)
+                if (item.BeginBeats > _currentBeats) continue;
+                if (_currentBeats > item.EndBeats)
                 {
                     _runningEvents.RemoveAt(i);
                     i--;
                 }
 
-                DoLineEvent(item, _currentBeats);
+                DoUnitEvent(item, _currentBeats);
             }
         }
 
         private void UpdateLineHeight()
         {
-            for (int i = 0; i < Lines.Count; i++)
+            for (int i = 0; i < Units.Count; i++)
             {
-                var line = Lines[i];
+                var line = Units[i];
                 var newYPos = line.FindYPos(_currentBeats);
                 line.YPosition = newYPos;
             }
@@ -377,7 +358,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 for (int i = 0; i < _notes.Length; i++)
                 {
                     var note = _notes[i];
-                    var height = note.NoteHeight - Lines[(int)note.LineId].YPosition;
+                    var height = note.NoteHeight - Units[(int)note.UnitObjectId].YPosition;
                     if (height <= 25f && height >= 0)
                     {
                         _newNotes.Enqueue(note);
@@ -419,10 +400,11 @@ namespace Klrohias.NFast.PhiGamePlay
             for (int i = 0; i < eventsChunks.Length; i++)
             {
                 if (eventsChunks[i] != null) continue;
-                if (!_eventsGenerator.MoveNext()) eventsChunks[i] = new List<LineEvent>();
+                if (!_eventsGenerator.MoveNext()) eventsChunks[i] = new List<UnitEvent>();
                 else eventsChunks[i] = _eventsGenerator.Current;
             }
         }
+
         private void GameTick()
         {
             if (_currentBpm != 0f) _currentBeats = Timer.Time / 1000f / _beatLast;
@@ -432,12 +414,13 @@ namespace Klrohias.NFast.PhiGamePlay
                 GameFinish();
                 return;
             }
-            if (_nextBpmEvent.Key <= _currentBeats)
+
+            if (_nextBpmEvent.BeginBeats <= _currentBeats)
             {
                 _currentBpm = _nextBpmEvent.Value;
                 _nextBpmEvent = _bpmEventGenerator.MoveNext()
                     ? _bpmEventGenerator.Current
-                    : new(float.PositiveInfinity, 0f);
+                    : BpmEvent.Create(float.PositiveInfinity, 0f);
                 _beatLast = 60f / _currentBpm;
             }
 
@@ -477,27 +460,23 @@ namespace Klrohias.NFast.PhiGamePlay
                     var noteObj = note.NoteGameObject;
                     if (noteObj != null) continue;
 
-                    var isHold = note.Type == NoteType.Hold;
-
                     noteObj = note.NoteGameObject =
-                        isHold ? _holdNotePool.RequestObject() : _notePool.RequestObject();
+                        note.Type == NoteType.Hold ? _holdNotePool.RequestObject() : _notePool.RequestObject();
 
-                    var lineWrapper = _lineWrappers[(int) note.LineId];
+                    var lineWrapper = _unitWrappers[(int) note.UnitObjectId];
 
+                    var typedWrapper = (PhiLineWrapper) lineWrapper;
                     noteObj.transform.parent = note.ReverseDirection
-                        ? lineWrapper.DownNoteViewport
-                        : lineWrapper.UpNoteViewport;
+                        ? typedWrapper.DownNoteViewport
+                        : typedWrapper.UpNoteViewport;
 
                     var localPos = noteObj.transform.localPosition;
                     var noteYOffset = ScreenAdapter.ToGameYPos(note.YPosition);
-                    localPos.y = note.NoteHeight - Lines[(int) note.LineId].YPosition + noteYOffset;
+                    localPos.y = note.NoteHeight - Units[(int) note.UnitObjectId].YPosition + noteYOffset;
                     localPos.x = ScreenAdapter.ToGameXPos(note.XPosition);
                     noteObj.transform.localPosition = localPos;
 
-                    IPhiNoteWrapper noteWrapper =
-                        isHold
-                            ? noteObj.GetComponent<PhiHoldNoteWrapper>()
-                            : noteObj.GetComponent<PhiNoteWrapper>();
+                    var noteWrapper = noteObj.GetComponent<IPhiNoteWrapper>();
                     noteWrapper.NoteStart(note);
                     noteObj.SetActive(true);
                 }

@@ -62,7 +62,7 @@ namespace Klrohias.NFast.PhiGamePlay
             for (var i = 0; i < _judgingHoldNotes.Length; i++)
             {
                 var (note, judgeResult) = _judgingHoldNotes[i];
-                if (note.EndTime <= Player.CurrentBeats)
+                if (note.EndBeats <= Player.CurrentBeats)
                 {
                     PutJudgeResult(note, judgeResult);
                     _judgingHoldNotes.RemoveAt(i);
@@ -81,7 +81,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private bool UpdateHoldNote(PhiNote note)
         {
-            var lineId = note.LineId;
+            var lineId = note.UnitObjectId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];
@@ -133,7 +133,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 {
                     _touches.Add(new TouchDetail
                     {
-                        LandDistances = new float[Player.Lines.Count]
+                        LandDistances = new float[Player.Units.Count]
                     });
                 }
 
@@ -147,14 +147,14 @@ namespace Klrohias.NFast.PhiGamePlay
         }
         private void UpdateLandDistances(int touchIndex)
         {
-            var lines = Player.Lines;
+            var lines = Player.Units;
             var touchDetail = _touches[touchIndex];
             var worldPos = Camera.main.ScreenToWorldPoint(touchDetail.RawTouch.position);
 
             for (var index = 0; index < lines.Count; index++)
             {
                 var chartLine = lines[index];
-                var linePos = Player.LineObjects[(int)chartLine.LineId].transform.position;
+                var linePos = Player.UnitObjects[(int)chartLine.UnitObjectId].transform.position;
                 var landPos = Vector2.Distance(GetLandPos(linePos, chartLine.Rotation, worldPos), linePos);
                 touchDetail.LandDistances[index] = landPos;
             }
@@ -169,7 +169,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private void ProcessDragNote(PhiNote note)
         {
             if (note.JudgeTime > _currentTime) return;
-            var lineId = note.LineId;
+            var lineId = note.UnitObjectId;
             for (var i = 0; i < _touchCount; i++)
             {
                 var touch = _touches[i];
@@ -183,7 +183,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessTapNote(PhiNote note)
         {
-            var lineId = note.LineId;
+            var lineId = note.UnitObjectId;
             for (var i = 0; i < _touchCount; i++)
             {
                 var touch = _touches[i];
@@ -202,7 +202,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessFlickNote(PhiNote note)
         {
-            var lineId = note.LineId;
+            var lineId = note.UnitObjectId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];
@@ -218,7 +218,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessHoldNote(PhiNote note)
         {
-            var lineId = note.LineId;
+            var lineId = note.UnitObjectId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];

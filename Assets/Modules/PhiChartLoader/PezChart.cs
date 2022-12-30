@@ -21,28 +21,28 @@ namespace Klrohias.NFast.PhiChartLoader
         {
             // convert bpm events
             var bpmEvents = BpmEvents.Select(x => x.ToNFastEvent())
-                .OrderBy(x => x.Key).ToList();
+                .OrderBy(x => x.BeginBeats).ToList();
 
             // TODO: decouple event converting
 
             // convert lines/notes
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
             var notesArray = new PhiNote[countOfNotes];
-            var linesArray = new PhiLine[JudgeLineList.Count];
-            var eventsList = new UnorderedList<LineEvent>(512);
+            var linesArray = new PhiUnit[JudgeLineList.Count];
+            var eventsList = new UnorderedList<UnitEvent>(512);
 
             uint lineId = 0;
             var noteIndex = 0;
             foreach (var judgeLine in JudgeLineList)
             {
-                var line = linesArray[lineId] = judgeLine.ToChartLine();
-                line.LineId = lineId;
+                var line = linesArray[lineId] = judgeLine.ToUnitObject();
+                line.UnitObjectId = lineId;
 
                 // cast events
                 var events = judgeLine.EventLayers
-                    .SelectMany(x => (IEnumerable<LineEvent>) x?.ToNFastEvents(lineId) ?? Array.Empty<LineEvent>())
-                    .Concat((IEnumerable<LineEvent>) judgeLine.Extended?.ToNFastEvents(lineId) ??
-                            Array.Empty<LineEvent>())
+                    .SelectMany(x => (IEnumerable<UnitEvent>) x?.ToNFastEvents(lineId) ?? Array.Empty<UnitEvent>())
+                    .Concat((IEnumerable<UnitEvent>) judgeLine.Extended?.ToNFastEvents(lineId) ??
+                            Array.Empty<UnitEvent>())
                     .ToArray();
 
                 eventsList.AddRange(events);
@@ -65,7 +65,7 @@ namespace Klrohias.NFast.PhiChartLoader
             {
                 Metadata = PezMetadata.ToNFastMetadata(),
                 Notes = notesArray,
-                Lines = linesArray,
+                Units = linesArray,
                 BpmEvents = bpmEvents,
                 LineEvents = eventsList.AsArray()
             };
@@ -117,8 +117,8 @@ namespace Klrohias.NFast.PhiChartLoader
         [JsonProperty("bpm")] public float Bpm;
         [JsonProperty("startTime")] public List<int> Time;
 
-        public KeyValuePair<float, float> ToNFastEvent()
-            => new(ChartTimespan.FromBeatsFraction(Time), Bpm);
+        public BpmEvent ToNFastEvent()
+            => BpmEvent.Create(ChartTimespan.FromBeatsFraction(Time), Bpm);
     }
     public class PezLineEvent
     {
@@ -178,14 +178,14 @@ namespace Klrohias.NFast.PhiChartLoader
                 default: return EasingFunction.Linear;
             }
         }
-        public LineEvent ToNFastEvent(uint lineId = 0, LineEventType type = LineEventType.Alpha)
+        public UnitEvent ToNFastEvent(uint lineId = 0, UnitEventType type = UnitEventType.Alpha)
         {
-            return new LineEvent()
+            return new UnitEvent()
             {
-                BeginTime = ChartTimespan.FromBeatsFraction(StartTime),
+                BeginBeats = ChartTimespan.FromBeatsFraction(StartTime),
                 BeginValue = Start,
                 EasingFuncRange = (EasingLeft, EasingRight),
-                EndTime = ChartTimespan.FromBeatsFraction(EndTime),
+                EndBeats = ChartTimespan.FromBeatsFraction(EndTime),
                 EndValue = End,
                 EasingFunc = ToNFastEasingFunction(),
                 Type = type,
@@ -193,7 +193,7 @@ namespace Klrohias.NFast.PhiChartLoader
             };
         }
     }
-    public class PezEventLayer
+    public class PezLineEventLayer
     {
         [JsonProperty("alphaEvents")]
         public List<PezLineEvent> AlphaEvents { get; set; }
@@ -210,29 +210,29 @@ namespace Klrohias.NFast.PhiChartLoader
         [JsonProperty("speedEvents")]
         public List<PezLineEvent> SpeedEvents { get; set; }
 
-        public List<LineEvent> ToNFastEvents(uint lineId = 0)
+        public List<UnitEvent> ToNFastEvents(uint lineId = 0)
         {
-            var result = new List<LineEvent>();
+            var result = new List<UnitEvent>();
             if (AlphaEvents != null)
             {
-                result.AddRange(AlphaEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.Alpha)));
+                result.AddRange(AlphaEvents.Select(x => x.ToNFastEvent(lineId, UnitEventType.Alpha)));
             }
             if (MoveXEvents != null)
             {
-                result.AddRange(MoveXEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.MoveX)));
+                result.AddRange(MoveXEvents.Select(x => x.ToNFastEvent(lineId, UnitEventType.MoveX)));
             }
             if (MoveYEvents != null)
             {
-                result.AddRange(MoveYEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.MoveY)));
+                result.AddRange(MoveYEvents.Select(x => x.ToNFastEvent(lineId, UnitEventType.MoveY)));
             }
             if (RotateEvents != null)
             {
-                result.AddRange(RotateEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.Rotate)));
+                result.AddRange(RotateEvents.Select(x => x.ToNFastEvent(lineId, UnitEventType.Rotate)));
             }
             if (SpeedEvents != null)
             {
                 result.AddRange(SpeedEvents.Select(x => { 
-                    var lineEvent = x.ToNFastEvent(lineId, LineEventType.Speed);
+                    var lineEvent = x.ToNFastEvent(lineId, UnitEventType.Speed);
                     lineEvent.EasingFuncRange = (0, 1f);
                     lineEvent.EasingFunc = EasingFunction.Linear;
                     return lineEvent;
@@ -254,16 +254,17 @@ namespace Klrohias.NFast.PhiChartLoader
         [JsonProperty("scaleXEvents")] public List<PezLineEvent> ScaleXEvents { get; set; }
 
         [JsonProperty("scaleYEvents")] public List<PezLineEvent> ScaleYEvents { get; set; }
+        [JsonProperty("textEvents")] public List<object> TextEvents { get; set; }
 
-        public List<LineEvent> ToNFastEvents(uint lineId = 0)
+        public List<UnitEvent> ToNFastEvents(uint lineId = 0)
         {
-            var result = new List<LineEvent>();
+            var result = new List<UnitEvent>();
             if (InclineEvents != null)
-                result.AddRange(InclineEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.Incline)));
+                result.AddRange(InclineEvents.Select(x => x.ToNFastEvent(lineId, UnitEventType.Incline)));
             if (ScaleXEvents != null)
-                result.AddRange(ScaleXEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.ScaleX)));
+                result.AddRange(ScaleXEvents.Select(x => x.ToNFastEvent(lineId, UnitEventType.ScaleX)));
             if (ScaleYEvents != null)
-                result.AddRange(ScaleXEvents.Select(x => x.ToNFastEvent(lineId, LineEventType.ScaleY)));
+                result.AddRange(ScaleXEvents.Select(x => x.ToNFastEvent(lineId, UnitEventType.ScaleY)));
             return result;
         }
     }
@@ -283,7 +284,7 @@ namespace Klrohias.NFast.PhiChartLoader
         public double Bpmfactor { get; set; }
 
         [JsonProperty("eventLayers")]
-        public List<PezEventLayer> EventLayers { get; set; }
+        public List<PezLineEventLayer> EventLayers { get; set; }
 
         [JsonProperty("extended")]
         public PezExtendedEvents Extended { get; set; }
@@ -303,10 +304,22 @@ namespace Klrohias.NFast.PhiChartLoader
         [JsonProperty("zOrder")]
         public int ZOrder { get; set; }
 
-        public PhiLine ToChartLine()
-            => new PhiLine
+        [JsonProperty("attachUI")]
+        public string AttachUI { get; set; }
+
+        private PhiUnitType GetUnitType()
+        {
+            if (!string.IsNullOrEmpty(AttachUI)) return PhiUnitType.AttachUI;
+            if (Extended != null && Extended.TextEvents != null && Extended.TextEvents.Count != 0)
+                return PhiUnitType.Text;
+            return PhiUnitType.Line;
+        }
+
+        public PhiUnit ToUnitObject()
+            => new PhiUnit
             {
-                ParentLineId = Father
+                ParentObjectId = Father,
+                Type = GetUnitType()
             };
     }
     public class PezNote
@@ -348,9 +361,9 @@ namespace Klrohias.NFast.PhiChartLoader
         {
             return new()
             {
-                LineId = lineId,
-                EndTime = ChartTimespan.FromBeatsFraction(EndTime),
-                BeginTime = ChartTimespan.FromBeatsFraction(StartTime),
+                UnitObjectId = lineId,
+                EndBeats = ChartTimespan.FromBeatsFraction(EndTime),
+                BeginBeats = ChartTimespan.FromBeatsFraction(StartTime),
                 XPosition = PositionX,
                 ReverseDirection = Above == 0,
                 IsFakeNote = IsFake == 1,

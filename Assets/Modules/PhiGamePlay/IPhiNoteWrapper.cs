@@ -6,5 +6,6 @@ namespace Klrohias.NFast.PhiGamePlay
     {
         public void NoteStart(PhiNote note);
         public bool IsJudged { get; set; }
+        public PhiGamePlayer Player { get; set; }
     }
 }

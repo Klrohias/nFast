@@ -8,10 +8,10 @@ namespace Klrohias.NFast.PhiGamePlay
     public class PhiNoteWrapper : MonoBehaviour, IPhiNoteWrapper
     {
         private bool _isRunning = false;
-        internal PhiGamePlayer Player;
+        [HideInInspector] public PhiGamePlayer Player { get; set; }
         private PhiNote _note;
         internal static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
-        private PhiLine _line;
+        private PhiUnit _unit;
         private float _yOffset = 0f;
         public SpriteRenderer Renderer;
         public bool IsJudged { get; set; } = false;
@@ -19,7 +19,7 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             _isRunning = true;
             this._note = note;
-            this._line = Player.Lines[(int) note.LineId];
+            this._unit = Player.Units[(int) note.UnitObjectId];
             this.IsJudged = false;
             this._yOffset = Player.ScreenAdapter.ToGameYPos(note.YPosition);
             Renderer.sprite = note.Type switch
@@ -35,7 +35,7 @@ namespace Klrohias.NFast.PhiGamePlay
         void Update()
         {
             if (!_isRunning) return;
-            if (Player.CurrentBeats >= _note.EndTime + (!IsJudged ? (15f / _line.Speed) : 0f))
+            if (Player.CurrentBeats >= _note.EndBeats + (!IsJudged ? (15f / _unit.Speed) : 0f))
             {
                 _isRunning = false;
                 Player.OnNoteFinalize(this);
@@ -43,7 +43,7 @@ namespace Klrohias.NFast.PhiGamePlay
             }
 
             var localPos = transform.localPosition;
-            var newPosY = _note.NoteHeight - _line.YPosition + _yOffset;
+            var newPosY = _note.NoteHeight - _unit.YPosition + _yOffset;
             localPos.y = newPosY;
             transform.localPosition = localPos;
         }

@@ -1148,6 +1148,7 @@ MonoBehaviour:
   - {fileID: 538345411}
   - {fileID: 847088436}
   JudgeLinePrefab: {fileID: 1031136668633609566, guid: 1aeaf095e7ace6742a6d58e88df5b059, type: 3}
+  AttachUIUnitPrefab: {fileID: 1163967686480581104, guid: b17653592dddfe346af7aa1b41d95f55, type: 3}
   NotePrefab: {fileID: 8914547913718732584, guid: 38d2e3d57f93d0c40bfc9d92d125f78c, type: 3}
   HoldNotePrefab: {fileID: 5592613672520645034, guid: 757fbce5895c45045a0f184acdf57a63, type: 3}
   MetadataDisplay: {fileID: 1069853565}
