@@ -5601,6 +5601,7 @@ MonoBehaviour:
   Home:
     Viewport: {fileID: 1162534578}
     RefreshChartButton: {fileID: 1542514830}
+    RefreshIcon: {fileID: 2024982637}
   CommandButtonPrefab: {fileID: 8302273904179110900, guid: 74db9a4c410aaba4ab77b940d5e976b1, type: 3}
 --- !u!1 &2134484605
 GameObject:

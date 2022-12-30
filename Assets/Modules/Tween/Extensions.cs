@@ -84,5 +84,14 @@ namespace Klrohias.NFast.Tween
         {
             Tweener.Get().Remove(tween);
         }
+
+        public static Task NTweenRotate(this Transform transform, Vector3 from, Vector3 to, float lastTime = 300f,
+            EasingFunction easing = EasingFunction.Linear)
+        {
+            return Tweener.Get().RunTween(lastTime, value =>
+            {
+                transform.rotation = Quaternion.Euler(Vector3.Lerp(from, to, value));
+            }, easing, 0f, 1f);
+        }
     }
 }

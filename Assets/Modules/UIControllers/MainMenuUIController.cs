@@ -3,6 +3,7 @@ using System.IO;
 using Klrohias.NFast.Native;
 using Klrohias.NFast.Navigation;
 using Klrohias.NFast.PhiGamePlay;
+using Klrohias.NFast.Tween;
 using Klrohias.NFast.UIComponent;
 using Klrohias.NFast.Utilities;
 using TMPro;
@@ -18,6 +19,8 @@ namespace Klrohias.NFast.UIControllers
         {
             public Transform Viewport;
             public Button RefreshChartButton;
+            public Transform RefreshIcon;
+            internal bool RefreshLock;
         }
         [Serializable]
         public struct LocalImportProperties
@@ -57,7 +60,15 @@ namespace Klrohias.NFast.UIControllers
         {
             LocalImport.BrowseButton.onClick.AddListener(BrowseImportFile);
             LocalImport.ImportButton.onClick.AddListener(ImportFile);
-            Home.RefreshChartButton.onClick.AddListener(UpdateCharts);
+            Home.RefreshChartButton.onClick.AddListener(async() =>
+            {
+                if (Home.RefreshLock) return;
+                Home.RefreshLock = true;
+                await Home.RefreshIcon.NTweenRotate(Vector3.zero, Vector3.back * 360f,
+                    easing: EasingFunction.SineIn);
+                UpdateCharts();
+                Home.RefreshLock = false;
+            });
             UpdateCharts();
         }
 

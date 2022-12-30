@@ -35,7 +35,7 @@ namespace Klrohias.NFast.UIComponent
             }
         }
 
-        private async void UpdateTab(bool noAnimation = false)
+        private void UpdateTab(bool noAnimation = false)
         {
             for (var i = 0; i < Groups.Length; i++)
             {
@@ -47,7 +47,7 @@ namespace Klrohias.NFast.UIComponent
                 {
                     var beginAlpha = item.View.alpha;
                     if (beginAlpha == 0f && !isCurrent) continue;
-                    await item.View.NTweenAlpha(Duration, EasingFunction
+                    item.View.NTweenAlpha(Duration, EasingFunction
                         , beginAlpha, isCurrent ? 1f : 0f);
                 }
 
