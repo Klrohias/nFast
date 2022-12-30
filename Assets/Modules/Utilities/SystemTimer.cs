@@ -34,7 +34,7 @@ namespace Klrohias.NFast.Utilities
 
         private float rawTime => (float)(queryCounter()) / freq * 1000f;
 #else
-        private float rawTime => UnityEngine.Time.realtimeSinceStartup * 1000f;
+        private float rawTime => UnityEngine.Time.fixedTime * 1000f;
 #endif
 
 #else
@@ -43,7 +43,11 @@ namespace Klrohias.NFast.Utilities
         private float startTime = 0f;
         private bool paused = false;
         private float pauseStart = 0;
+#if UNITY_EDITOR
+        public float Time => (rawTime - startTime - offset);
+#else
         public float Time => rawTime - startTime - offset;
+#endif
         public void Reset()
         {
             startTime = rawTime;

@@ -23,6 +23,13 @@ namespace Klrohias.NFast.PhiGamePlay
         private int _touchCount = 0; // update each frame
         private float _currentTime = 0f;
         private const float NOTE_WIDTH = 2.5f * 0.88f;
+
+        // event system active
+        private Resolution _currentResolution;
+        private float _eventSystemInactiveTime = float.PositiveInfinity;
+        private const float EVENT_SYSTEM_ACTIVE_LAST = 3000f;
+        public GameObject EventSystemObject;
+
         private class TouchDetail
         {
             public Touch RawTouch;
@@ -31,17 +38,20 @@ namespace Klrohias.NFast.PhiGamePlay
         private void Start()
         {
             _judgeNotes = Player.JudgeNotes;
+            _currentResolution = Screen.currentResolution;
         }
         private void Update()
         {
             if (!Player.GameRunning) return;
 
+            _currentTime = Player.Timer.Time;
+            TryDeactivateEventSystem();
+
             // update touch detail
             _touchCount = Input.touchCount;
+
             UpdateTouchDetails();
 
-
-            _currentTime = Player.Timer.Time;
             ProcessJudgeNotes();
 
             UpdateHoldNotes();
@@ -96,6 +106,25 @@ namespace Klrohias.NFast.PhiGamePlay
             var y = k * x + b;
             return new Vector2(x, y);
         }
+
+        private void TryDeactivateEventSystem()
+        {
+            if (_currentTime < _eventSystemInactiveTime) return;
+            _eventSystemInactiveTime = float.PositiveInfinity;
+            EventSystemObject.SetActive(false);
+        }
+
+        private void TryActivateEventSystem(Touch rawTouch)
+        {
+            if (!float.IsPositiveInfinity(_eventSystemInactiveTime)) return;
+            var rawTouchPosition = rawTouch.position;
+            if (rawTouchPosition.x >= _currentResolution.width * 0.25
+                && rawTouchPosition.y <= _currentResolution.height * 0.75) return;
+            
+            _eventSystemInactiveTime = _currentTime + EVENT_SYSTEM_ACTIVE_LAST;
+            EventSystemObject.SetActive(true);
+        }
+
         private void UpdateTouchDetails()
         {
             for (int i = 0; i < _touchCount; i++)
@@ -110,6 +139,9 @@ namespace Klrohias.NFast.PhiGamePlay
 
                 var item = _touches[i];
                 item.RawTouch = Input.GetTouch(i);
+
+                TryActivateEventSystem(item.RawTouch);
+
                 UpdateLandDistances(i);
             }
         }

@@ -7,53 +7,62 @@ namespace Klrohias.NFast.Utilities
 {
     public class UnorderedList<T> : IEnumerable<T>
     {
-        public T[] Items = new T[16];
+        private T[] _items;
         private long _length = 0;
         public int Length => Convert.ToInt32(_length);
         public long LongLength => _length;
+
+        public UnorderedList()
+        {
+            _items = new T[16];
+        }
+        public UnorderedList(int c)
+        {
+            _items = new T[c];
+        }
         public T this[int index]
         {
-            get => Items[index];
-            set => Items[index] = value;
+            get => _items[index];
+            set => _items[index] = value;
         }
 
         public T this[long index]
         {
-            get => Items[index];
-            set => Items[index] = value;
+            get => _items[index];
+            set => _items[index] = value;
         }
         private void Reallocate(long size)
         {
             var newItems = new T[size];
-            Array.Copy(Items, 0, newItems, 0, _length);
-            Items = newItems;
+            Array.Copy(_items, 0, newItems, 0, _length);
+            _items = newItems;
         }
 
         public void Add(T item)
         {
-            if (_length >= Items.Length)
+            if (_length >= _items.Length)
             {
-                Reallocate((int) (Items.Length * 1.5f));
+                Reallocate((int) (_items.Length * 1.5f));
             }
 
-            Items[_length] = item;
+            _items[_length] = item;
             _length++;
         }
 
         public void AddIfNotExists(T item)
         {
-            for (int i = 0; i < Items.Length; i++)
+            for (var i = 0; i < _items.Length; i++)
             {
-                if (object.ReferenceEquals(Items[i], item)) return;
+                if (object.ReferenceEquals(_items[i], item)) return;
             }
             Add(item);
         }
 
         public void AddRange(IList<T> itemList)
         {
-            if (Items.Length - _length < itemList.Count)
+            if (_items.Length - _length < itemList.Count)
             {
-                Reallocate(Math.Max((long) (Items.Length * 1.5f), _length + itemList.Count));
+                Reallocate(Math.Max((long) (_items.Length * 1.5f), _length + itemList.Count));
             }
 
             foreach (var item in itemList)
@@ -70,15 +79,15 @@ namespace Klrohias.NFast.Utilities
         {
             if (_length == 0) throw new IndexOutOfRangeException();
             _length--;
-            Items[index] = Items[_length];
-            Items[_length] = default;
+            _items[index] = _items[_length];
+            _items[_length] = default;
         }
 
         public void Remove(T obj)
         {
             for (int i = 0; i < _length; i++)
             {
-                var item = Items[i];
+                var item = _items[i];
 
                 if (!object.ReferenceEquals(item, obj)) continue;
                 RemoveAt(i);
@@ -95,16 +104,12 @@ namespace Klrohias.NFast.Utilities
         {
             for (long i = 0; i < _length; i++)
             {
-                yield return Items[i];
+                yield return _items[i];
             }
         }
         public IEnumerator<T> GetEnumerator()
         {
-            if (LongLength >= Length)
-            {
-                return LongEnumerator();
-            }
-            return Items.Take(Length).GetEnumerator();
+            return LongEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -112,5 +117,11 @@ namespace Klrohias.NFast.Utilities
             return GetEnumerator();
         }
 
+        public T[] AsArray()
+        {
+            var result = new T[_length];
+            Array.Copy(_items, 0, result, 0, _length);
+            return result;
+        }
     }
 }

@@ -22,7 +22,7 @@ namespace Klrohias.NFast.UIComponent
         
         private void Start()
         {
-            UpdateTab();
+            UpdateTab(true);
             for (int i = 0; i < Groups.Length; i++)
             {
                 var index = i;
@@ -35,15 +35,15 @@ namespace Klrohias.NFast.UIComponent
             }
         }
 
-        private async void UpdateTab()
+        private async void UpdateTab(bool noAnimation = false)
         {
             for (var i = 0; i < Groups.Length; i++)
             {
                 var item = Groups[i];
-                
+
                 if (item.View == null) continue;
                 var isCurrent = i == Current;
-                if (Duration != 0f)
+                if (Duration != 0f && !noAnimation)
                 {
                     var beginAlpha = item.View.alpha;
                     if (beginAlpha == 0f && !isCurrent) continue;

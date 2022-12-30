@@ -17,6 +17,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private const float BODY_HEIGHT = 0.04f;
         private const float Y_SCALE = 2.5f;
         private float _noteLast = 0f;
+        private float _yOffset = 0f;
         public bool IsJudged { get; set; } = false;
         private void Update()
         {
@@ -27,8 +28,9 @@ namespace Klrohias.NFast.PhiGamePlay
                 Player.OnNoteFinalize(this);
                 return;
             }
+
             var localPos = transform.localPosition;
-            var newPosY = _note.YPosition - _line.YPosition;
+            var newPosY = _note.NoteHeight - _line.YPosition + _yOffset;
             localPos.y = newPosY;
             transform.localPosition = localPos;
         }
@@ -39,11 +41,12 @@ namespace Klrohias.NFast.PhiGamePlay
             this._note = note;
             this._line = Player.Lines[(int)note.LineId];
             this._noteLast = note.EndTime - note.BeginTime;
+            this._yOffset = Player.ScreenAdapter.ToGameYPos(note.YPosition);
             transform.localRotation = PhiNoteWrapper.ZeroRotation;
             BottomHead.localPosition = Vector3.zero;
-            Body.localScale = new Vector3(1f, note.Height / BODY_HEIGHT / Y_SCALE, 1f);
-            TopHead.localPosition = Vector3.up * note.Height / Y_SCALE;
-            Body.localPosition = Vector3.up * (note.Height / Y_SCALE / 2f);
+            Body.localScale = new Vector3(1f, note.NoteLength / BODY_HEIGHT / Y_SCALE, 1f);
+            TopHead.localPosition = Vector3.up * note.NoteLength / Y_SCALE;
+            Body.localPosition = Vector3.up * (note.NoteLength / Y_SCALE / 2f);
         }
 
     }

@@ -12,6 +12,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private PhiNote _note;
         internal static Quaternion ZeroRotation = Quaternion.Euler(0, 0, 0);
         private PhiLine _line;
+        private float _yOffset = 0f;
         public SpriteRenderer Renderer;
         public bool IsJudged { get; set; } = false;
         public void NoteStart(PhiNote note)
@@ -20,6 +21,7 @@ namespace Klrohias.NFast.PhiGamePlay
             this._note = note;
             this._line = Player.Lines[(int) note.LineId];
             this.IsJudged = false;
+            this._yOffset = Player.ScreenAdapter.ToGameYPos(note.YPosition);
             Renderer.sprite = note.Type switch
             {
                 NoteType.Tap => Player.TapNoteSprite,
@@ -39,8 +41,9 @@ namespace Klrohias.NFast.PhiGamePlay
                 Player.OnNoteFinalize(this);
                 return;
             }
+
             var localPos = transform.localPosition;
-            var newPosY = _note.YPosition - _line.YPosition;
+            var newPosY = _note.NoteHeight - _line.YPosition + _yOffset;
             localPos.y = newPosY;
             transform.localPosition = localPos;
         }

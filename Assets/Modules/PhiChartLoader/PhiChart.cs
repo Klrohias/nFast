@@ -11,6 +11,7 @@ namespace Klrohias.NFast.PhiChartLoader
     [MemoryPackable]
     public partial class PhiChart
     {
+        public ushort FileVersion { get; set; } = 0;
         public ChartMetadata Metadata { get; set; }
         public PhiNote[] Notes { get; set; }
         public PhiLine[] Lines { get; set; }
@@ -183,21 +184,24 @@ namespace Klrohias.NFast.PhiChartLoader
         public float BeginTime { get; set; } = 0f;
         public float EndTime { get; set; } = 0f;
         public float XPosition { get; set; } = 0f;
+        public float YPosition { get; set; } = 0f; 
         public uint LineId { get; set; } = 0;
         public bool ReverseDirection { get; set; } = false;
         public bool IsFakeNote { get; set; } = false;
 
         internal GameObject NoteGameObject;
-        internal float Height = 0f;
-        internal float YPosition = 0f;
+        internal float NoteLength = 0f;
+        internal float NoteHeight = 0f;
         internal float JudgeTime = 0f;
+
         internal void GenerateInternals(PhiLine line, PhiChart chart)
         {
-            YPosition = line.FindYPos(BeginTime);
+            NoteHeight = line.FindYPos(BeginTime);
+            
             if (Type == NoteType.Hold)
             {
                 var endYPos = line.FindYPos(EndTime);
-                Height = endYPos - YPosition;
+                NoteLength = endYPos - NoteHeight;
             }
 
             JudgeTime = chart.FindJudgeTime(this) * 1000f; // unit: s -> ms
@@ -207,6 +211,7 @@ namespace Klrohias.NFast.PhiChartLoader
     public partial class PhiLine
     {
         public uint LineId { get; set; } = 0;
+        public int ParentLineId { get; set; } = -1;
 
         internal float Rotation = 0f;
         internal float YPosition = 0f;
@@ -309,7 +314,10 @@ namespace Klrohias.NFast.PhiChartLoader
         MoveY,
         Rotate,
         Speed,
-        Incline
+        Incline,
+        ScaleX,
+        ScaleY,
+        Color,
     }
 
     [MemoryPackable]
