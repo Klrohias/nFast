@@ -17,6 +17,7 @@ namespace Klrohias.NFast.UIControllers
         public struct HomeProperties
         {
             public Transform Viewport;
+            public Button RefreshChartButton;
         }
         [Serializable]
         public struct LocalImportProperties
@@ -56,6 +57,7 @@ namespace Klrohias.NFast.UIControllers
         {
             LocalImport.BrowseButton.onClick.AddListener(BrowseImportFile);
             LocalImport.ImportButton.onClick.AddListener(ImportFile);
+            Home.RefreshChartButton.onClick.AddListener(UpdateCharts);
             UpdateCharts();
         }
 
@@ -105,6 +107,7 @@ namespace Klrohias.NFast.UIControllers
             ToastService.Get().Show(ToastService.ToastType.Success, "导入成功");
 
             LocalImport.ImportButton.interactable = true;
+            UpdateCharts();
         }
 
         private async void BrowseImportFile()
