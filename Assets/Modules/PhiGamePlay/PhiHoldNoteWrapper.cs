@@ -39,7 +39,7 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             _isRunning = true;
             this._note = note;
-            this._unit = Player.Units[(int)note.UnitObjectId];
+            this._unit = Player.Units[(int)note.unitId];
             this._noteLast = note.EndBeats - note.BeginBeats;
             this._yOffset = Player.ScreenAdapter.ToGameYPos(note.YPosition);
             transform.localRotation = PhiNoteWrapper.ZeroRotation;

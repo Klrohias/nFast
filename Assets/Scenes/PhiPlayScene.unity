@@ -157,6 +157,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BackButton: {fileID: 979051457}
+  Player: {fileID: 1316135047}
 --- !u!114 &10632398
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -256,6 +257,8 @@ MonoBehaviour:
   GameVirtualResolutionWidth: 675
   GameVirtualResolutionHeight: 379.6875
   ViewportSize: 10
+  AutoScaleTransforms:
+  - {fileID: 538345410}
 --- !u!1 &192471187
 GameObject:
   m_ObjectHideFlags: 0
@@ -1108,6 +1111,7 @@ GameObject:
   - component: {fileID: 1316135046}
   - component: {fileID: 1316135047}
   - component: {fileID: 1316135048}
+  - component: {fileID: 1316135049}
   m_Layer: 0
   m_Name: GamePlayer
   m_TagString: Untagged
@@ -1143,7 +1147,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _currentBeats: 0
-  BackgroundTransform: {fileID: 694944722}
   BackgroundImages:
   - {fileID: 538345411}
   - {fileID: 847088436}
@@ -1176,6 +1179,20 @@ MonoBehaviour:
   BadJudgeRange: 350
   Autoplay: 0
   EventSystemObject: {fileID: 1362777252}
+--- !u!114 &1316135049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1316135045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f6faab451519364ea3feab32ec0ad8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Player: {fileID: 1316135047}
+  ScreenAdapter: {fileID: 10632402}
 --- !u!1 &1362777252
 GameObject:
   m_ObjectHideFlags: 0

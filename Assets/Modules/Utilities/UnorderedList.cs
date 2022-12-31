@@ -123,5 +123,14 @@ namespace Klrohias.NFast.Utilities
             Array.Copy(_items, 0, result, 0, _length);
             return result;
         }
+
+        public static UnorderedList<T> From(T[] array)
+        {
+            var length = array.Length;
+            var result = new UnorderedList<T>(length);
+            Array.Copy(array, result._items, length);
+            result._length = length;
+            return result;
+        }
     }
 }

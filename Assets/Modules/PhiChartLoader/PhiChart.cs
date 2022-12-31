@@ -15,17 +15,17 @@ namespace Klrohias.NFast.PhiChartLoader
         public ChartMetadata Metadata { get; set; }
         public PhiNote[] Notes { get; set; }
         public PhiUnit[] Units { get; set; }
-        public UnitEvent[] LineEvents { get; set; }
+        public UnitEvent[] UnitEvents { get; set; }
         public List<BpmEvent> BpmEvents { get; set; }
         
-        public IEnumerator<IList<UnitEvent>> GetEvents()
+        public IEnumerator<IList<UnitEvent>> GetOrderedEvents()
         {
             int beats = 0;
-            while (beats < LineEventGroups.Count)
+            while (beats < UnitEventGroups.Count)
             {
-                if (LineEventGroups.TryGetValue(beats, out var result))
+                if (UnitEventGroups.TryGetValue(beats, out var result))
                     yield return result;
-                else yield return new List<UnitEvent>();
+                else yield return Array.Empty<UnitEvent>();
                 beats++;
             }
         }
@@ -36,7 +36,7 @@ namespace Klrohias.NFast.PhiChartLoader
             return result;
         }
 
-        internal readonly Dictionary<int, List<UnitEvent>> LineEventGroups = new();
+        internal readonly Dictionary<int, List<UnitEvent>> UnitEventGroups = new();
         internal readonly Dictionary<int, List<PhiNote>> JudgeNoteGroups = new();
         internal async Task GenerateInternals()
         {
@@ -45,7 +45,7 @@ namespace Klrohias.NFast.PhiChartLoader
                 foreach (var line in Units)
                 {
                     line.LoadSpeedSegments(
-                        LineEvents.Where(x => x.LineId == line.UnitObjectId && x.Type == UnitEventType.Speed)
+                        UnitEvents.Where(x => x.UnitId == line.UnitId && x.Type == UnitEventType.Speed)
                             .OrderBy(x => x.BeginBeats));
                 }
             });
@@ -58,7 +58,7 @@ namespace Klrohias.NFast.PhiChartLoader
                 {
                     foreach (var chartNote in Notes)
                     {
-                        chartNote.GenerateInternals(Units[chartNote.UnitObjectId], this);
+                        chartNote.GenerateInternals(Units[chartNote.unitId], this);
                     }
                 }));
             }
@@ -80,7 +80,7 @@ namespace Klrohias.NFast.PhiChartLoader
                         for (int i = range.Item1; i < range.Item2; i++)
                         {
                             var note = Notes[i];
-                            var line = Units[note.UnitObjectId];
+                            var line = Units[note.unitId];
                             note.GenerateInternals(line, this);
                         }
                     }));
@@ -97,9 +97,9 @@ namespace Klrohias.NFast.PhiChartLoader
 
             threadTasks.Add(Async.RunOnThread(() =>
             {
-                foreach (var group in LineEvents.GroupBy(x => (int) x.BeginBeats))
+                foreach (var group in UnitEvents.GroupBy(x => (int) x.BeginBeats))
                 {
-                    LineEventGroups[group.Key] = group.ToList();
+                    UnitEventGroups[group.Key] = group.ToList();
                 }
             }));
 
@@ -180,7 +180,7 @@ namespace Klrohias.NFast.PhiChartLoader
         public float EndBeats { get; set; } = 0f;
         public float XPosition { get; set; } = 0f;
         public float YPosition { get; set; } = 0f; 
-        public uint UnitObjectId { get; set; } = 0;
+        public uint unitId { get; set; } = 0;
         public bool ReverseDirection { get; set; } = false;
         public bool IsFakeNote { get; set; } = false;
 
@@ -213,8 +213,8 @@ namespace Klrohias.NFast.PhiChartLoader
     public partial class PhiUnit
     {
         public PhiUnitType Type { get; set; } = PhiUnitType.Line;
-        public uint UnitObjectId { get; set; } = 0;
-        public int ParentObjectId { get; set; } = -1;
+        public uint UnitId { get; set; } = 0;
+        public int ParentUnitId { get; set; } = -1;
 
         internal float Rotation = 0f;
         internal float YPosition = 0f;
@@ -225,34 +225,34 @@ namespace Klrohias.NFast.PhiChartLoader
             var lastSpeed = 0f;
             var result = new List<SpeedSegment>();
             var isFirst = true;
-            foreach (var lineEvent in events)
+            foreach (var unitEvent in events)
             {
                 if (!isFirst)
                 {
                     result.Add(new()
                     {
                         BeginBeats = lastBeats,
-                        EndBeats = lineEvent.BeginBeats,
+                        EndBeats = unitEvent.BeginBeats,
                         EndValue = lastSpeed,
                         BeginValue = lastSpeed,
                         IsStatic = true
                     });
                 }
 
-                if (lineEvent.BeginBeats != lineEvent.EndBeats)
+                if (unitEvent.BeginBeats != unitEvent.EndBeats)
                 {
                     result.Add(new()
                     {
-                        BeginBeats = lineEvent.BeginBeats,
-                        EndBeats = lineEvent.EndBeats,
-                        BeginValue = lineEvent.BeginValue,
-                        EndValue = lineEvent.EndValue,
+                        BeginBeats = unitEvent.BeginBeats,
+                        EndBeats = unitEvent.EndBeats,
+                        BeginValue = unitEvent.BeginValue,
+                        EndValue = unitEvent.EndValue,
                         IsStatic = false
                     });
                 }
 
-                lastBeats = lineEvent.EndBeats;
-                lastSpeed = lineEvent.EndValue;
+                lastBeats = unitEvent.EndBeats;
+                lastSpeed = unitEvent.EndValue;
                 isFirst = false;
             }
 
@@ -333,7 +333,9 @@ namespace Klrohias.NFast.PhiChartLoader
         public float EndBeats { get; set; }
         public EasingFunction EasingFunc { get; set; }
         public (float Low, float High) EasingFuncRange { get; set; }
-        public uint LineId { get; set; }
+        public uint UnitId { get; set; }
+
+        internal bool isEventStarted = false; // TODO: DEBUG USE!!
     }
 
     public static class ChartTimespan

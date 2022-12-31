@@ -9,10 +9,15 @@ namespace Klrohias.NFast.UIComponent
         public float GameVirtualResolutionWidth = 625f;
         public float GameVirtualResolutionHeight = 440f;
         public float ViewportSize = 10f;
+        public Transform[] AutoScaleTransforms;
 
         private void Awake()
         {
             SetupScreenScale();
+            foreach (var objTransform in AutoScaleTransforms)
+            {
+                objTransform.localScale = ScaleVector3(objTransform.localScale);
+            }
         }
         public Vector2 ScaleVector2(Vector2 inputVector2) => inputVector2 * _scaleFactor;
 

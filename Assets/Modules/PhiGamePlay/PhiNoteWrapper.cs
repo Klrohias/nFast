@@ -19,7 +19,7 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             _isRunning = true;
             this._note = note;
-            this._unit = Player.Units[(int) note.UnitObjectId];
+            this._unit = Player.Units[(int) note.unitId];
             this.IsJudged = false;
             this._yOffset = Player.ScreenAdapter.ToGameYPos(note.YPosition);
             Renderer.sprite = note.Type switch

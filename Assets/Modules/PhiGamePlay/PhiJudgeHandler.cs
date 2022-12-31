@@ -81,13 +81,13 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private bool UpdateHoldNote(PhiNote note)
         {
-            var lineId = note.UnitObjectId;
+            var unitId = note.unitId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];
 
                 if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
-                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+                              touch.LandDistances[unitId]) > NOTE_WIDTH / 1.75f) continue;
 
                 return true;
             }
@@ -154,7 +154,7 @@ namespace Klrohias.NFast.PhiGamePlay
             for (var index = 0; index < lines.Count; index++)
             {
                 var chartLine = lines[index];
-                var linePos = Player.UnitObjects[(int)chartLine.UnitObjectId].transform.position;
+                var linePos = Player.UnitObjects[(int)chartLine.UnitId].transform.position;
                 var landPos = Vector2.Distance(GetLandPos(linePos, chartLine.Rotation, worldPos), linePos);
                 touchDetail.LandDistances[index] = landPos;
             }
@@ -169,12 +169,12 @@ namespace Klrohias.NFast.PhiGamePlay
         private void ProcessDragNote(PhiNote note)
         {
             if (note.JudgeTime > _currentTime) return;
-            var lineId = note.UnitObjectId;
+            var unitId = note.unitId;
             for (var i = 0; i < _touchCount; i++)
             {
                 var touch = _touches[i];
                 if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
-                                touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+                                touch.LandDistances[unitId]) > NOTE_WIDTH / 1.75f) continue;
 
                 PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
                 break;
@@ -183,14 +183,14 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessTapNote(PhiNote note)
         {
-            var lineId = note.UnitObjectId;
+            var unitId = note.unitId;
             for (var i = 0; i < _touchCount; i++)
             {
                 var touch = _touches[i];
                 if (touch.RawTouch.phase != TouchPhase.Began) continue;
 
                 if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
-                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+                              touch.LandDistances[unitId]) > NOTE_WIDTH / 1.75f) continue;
                 
                 var range = MathF.Abs(_currentTime - note.JudgeTime);
                 if (range < PerfectJudgeRange) PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
@@ -202,14 +202,14 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessFlickNote(PhiNote note)
         {
-            var lineId = note.UnitObjectId;
+            var unitId = note.unitId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];
                 if (touch.RawTouch.phase != TouchPhase.Moved) continue;
 
                 if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
-                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+                              touch.LandDistances[unitId]) > NOTE_WIDTH / 1.75f) continue;
 
                 PutJudgeResult(note, PhiGamePlayer.JudgeResult.Perfect);
                 break;
@@ -218,13 +218,13 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessHoldNote(PhiNote note)
         {
-            var lineId = note.UnitObjectId;
+            var unitId = note.unitId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];
 
                 if (MathF.Abs(ScreenAdapter.ToGameXPos(note.XPosition) -
-                              touch.LandDistances[lineId]) > NOTE_WIDTH / 1.75f) continue;
+                              touch.LandDistances[unitId]) > NOTE_WIDTH / 1.75f) continue;
 
                 var range = MathF.Abs(_currentTime - note.JudgeTime);
                 var judgeResult = PhiGamePlayer.JudgeResult.Miss;
