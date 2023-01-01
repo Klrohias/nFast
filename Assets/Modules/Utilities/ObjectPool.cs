@@ -10,11 +10,13 @@ namespace Klrohias.NFast.Utilities
         private List<GameObject> objects = new();
         public Func<GameObject> OnRequestNewObject;
         private byte[] lendObjectBitmap = new byte[4];
+        private Action<GameObject> ActiveObjectOverride;
+        private Action<GameObject> InactiveObjectOverride;
         public ObjectPool(Func<GameObject> onRequestNewObject)
         {
             OnRequestNewObject = onRequestNewObject;
         }
-
+        
         public ObjectPool(Func<GameObject> onRequestNewObject, int c)
         {
             OnRequestNewObject = onRequestNewObject;
@@ -25,10 +27,27 @@ namespace Klrohias.NFast.Utilities
             }
         }
 
+        public void SetActiveObjectOverride(Action<GameObject> action) => ActiveObjectOverride = action;
+        public void SetInactiveObjectOverride(Action<GameObject> action) => InactiveObjectOverride = action;
+
+        private void SetInactive(GameObject obj)
+        {
+            if (InactiveObjectOverride != null)
+                InactiveObjectOverride(obj);
+            else obj.SetActive(false);
+        }
+
+        private void SetActive(GameObject obj)
+        {
+            if (ActiveObjectOverride != null)
+                ActiveObjectOverride(obj);
+            else obj.SetActive(true);
+        }
+
         private void RequestNewObject()
         {
             var obj = OnRequestNewObject();
-            obj.SetActive(false);
+            SetInactive(obj);
             objects.Add(obj);
             if (objects.Count / 8 >= lendObjectBitmap.Length)
             {
@@ -73,6 +92,7 @@ namespace Klrohias.NFast.Utilities
             }
             var result = objects[index];
             lendObjectBitmap[i] |= (byte) (0b1 << k);
+            SetActive(result);
             return result;
         }
 
@@ -81,7 +101,7 @@ namespace Klrohias.NFast.Utilities
             var index = objects.IndexOf(gameObject);
             var i = index / 8;
             var k = index % 8;
-            gameObject.SetActive(false);
+            SetInactive(gameObject);
             lendObjectBitmap[i] &= (byte) ~(0b1 << k);
         }
 
@@ -94,7 +114,7 @@ namespace Klrohias.NFast.Utilities
 
             foreach (var gameObject in objects)
             {
-                gameObject.SetActive(false);
+                SetInactive(gameObject);
             }
         }
     }

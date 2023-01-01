@@ -12,12 +12,12 @@ namespace Klrohias.NFast.PhiGamePlay
         public ScreenAdapter ScreenAdapter;
         private Queue<PhiNote> _newNotes;
         private List<IPhiUnitWrapper> _unitWrappers;
+        private readonly UnorderedList<IPhiNoteWrapper> _noteWrappers = new();
         private void Start()
         {
             _newNotes = Player.NewNotes;
             _unitWrappers = Player.UnitWrappers;
         }
-
         private void Update()
         {
             if (!Player.GameRunning) return;
@@ -25,6 +25,24 @@ namespace Klrohias.NFast.PhiGamePlay
             lock (_newNotes)
             {
                 ActivateDisplayNote();
+            }
+
+            DeactivateNotes();
+        }
+
+        private void DeactivateNotes()
+        {
+            var currentBeats = Player.CurrentBeats;
+            for (int i = 0; i < _noteWrappers.Length; i++)
+            {
+                var item = _noteWrappers[i].Note;
+                if (item.EndBeats > currentBeats) continue;
+
+                if (item.Type == NoteType.Hold) Player.OnNoteFinalize((PhiHoldNoteWrapper) _noteWrappers[i]);
+                else Player.OnNoteFinalize((PhiNoteWrapper) _noteWrappers[i]);
+
+                _noteWrappers.RemoveAt(i);
+                i--;
             }
         }
 
@@ -37,7 +55,8 @@ namespace Klrohias.NFast.PhiGamePlay
                 if (noteObj != null) continue;
 
                 noteObj = note.NoteGameObject =
-                    note.Type == NoteType.Hold ? Player.HoldNotePool.RequestObject() 
+                    note.Type == NoteType.Hold
+                        ? Player.HoldNotePool.RequestObject()
                         : Player.NotePool.RequestObject();
 
                 var lineWrapper = _unitWrappers[(int) note.UnitId];
@@ -49,13 +68,14 @@ namespace Klrohias.NFast.PhiGamePlay
 
                 var localPos = noteObj.transform.localPosition;
                 var noteYOffset = ScreenAdapter.ToGameYPos(note.YPosition);
-                localPos.y = note.NoteHeight - Player.Units[(int) note.UnitId].YPosition + noteYOffset;
+                localPos.y = note.NoteHeight + noteYOffset;
                 localPos.x = ScreenAdapter.ToGameXPos(note.XPosition);
                 noteObj.transform.localPosition = localPos;
 
                 var noteWrapper = noteObj.GetComponent<IPhiNoteWrapper>();
-                noteWrapper.NoteStart(note);
-                noteObj.SetActive(true);
+                noteWrapper.Note = note;
+                _noteWrappers.Add(noteWrapper);
+                noteWrapper.NoteStart();
             }
         }
     }

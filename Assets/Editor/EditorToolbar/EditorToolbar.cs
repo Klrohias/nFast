@@ -4,6 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Klrohias.NFast.PhiGamePlay;
+using Klrohias.NFast.Utilities;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Experimental;
@@ -95,16 +98,21 @@ namespace Klrohias.UnityEditorToolbox
                 SceneView.FrameLastActiveSceneView();
             }
 
-            if (GUILayout.Button("Time Scale"))
+            if (GUILayout.Button("Toolbox"))
             {
-                EditorWindow.GetWindow<TimeScaleEditorWindow>();
+                EditorWindow.GetWindow<EditorToolboxWindow>();
             }
             GUILayout.EndHorizontal();
         }
     }
 
-    public class TimeScaleEditorWindow : EditorWindow
+    public class EditorToolboxWindow : EditorWindow
     {
+        private void DumpObject(object obj) => JsonConvert.SerializeObject(obj, Formatting.Indented,
+            new JsonSerializerSettings()
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }).Log();
         private void OnGUI()
         {
             GUILayout.BeginHorizontal();
@@ -120,6 +128,13 @@ namespace Klrohias.UnityEditorToolbox
                 Time.timeScale = 10f;
             GUILayout.EndHorizontal();
             GUILayout.Label("Current: " + Time.timeScale);
+
+            if (GUILayout.Button("Dump selected Note"))
+            {
+                var selectedObject =
+                    Selection.activeTransform.gameObject;
+                DumpObject(selectedObject.GetComponent<IPhiNoteWrapper>().Note);
+            }
         }
     }
 }

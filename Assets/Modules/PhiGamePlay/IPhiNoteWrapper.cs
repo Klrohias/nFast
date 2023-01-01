@@ -4,7 +4,8 @@ namespace Klrohias.NFast.PhiGamePlay
 {
     public interface IPhiNoteWrapper
     {
-        public void NoteStart(PhiNote note);
+        public PhiNote Note { get; set; }
+        public void NoteStart();
         public bool IsJudged { get; set; }
         public PhiGamePlayer Player { get; set; }
     }

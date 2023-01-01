@@ -13,14 +13,17 @@ namespace Klrohias.NFast.PhiGamePlay
         public SpriteRenderer LineBody;
         public Transform UpNoteViewport;
         public Transform DownNoteViewport;
-
         private static readonly Vector2 LineDefaultScale = new Vector2(50f, 0.1f);
-
         private float _lastAlpha = 1f;
+        private Transform _cachedTransform;
 
+        private void Awake()
+        {
+            _cachedTransform = transform;
+        }
         private void Start()
         {
-            transform.localScale = Player.ScreenAdapter.ScaleVector3(transform.localScale);
+            _cachedTransform.localScale = Player.ScreenAdapter.ScaleVector3(_cachedTransform.localScale);
         }
         public void SetAlpha(float val)
         {
@@ -43,6 +46,11 @@ namespace Klrohias.NFast.PhiGamePlay
             _lastAlpha = val;
         }
 
+        public void UpdateLineHeight(float height)
+        {
+            UpNoteViewport.localPosition = Vector3.down * height;
+            DownNoteViewport.localPosition = Vector3.up * height;
+        }
         public void DoEvent(UnitEventType type, float value)
         {
             switch (type)
@@ -74,7 +82,6 @@ namespace Klrohias.NFast.PhiGamePlay
                 }
                 case UnitEventType.Speed:
                 {
-                    Unit.Speed = value;
                     break;
                 }
                 case UnitEventType.ScaleX:

@@ -25,8 +25,6 @@ namespace Klrohias.NFast.PhiGamePlay
         internal bool GameRunning { get; private set; } = false;
         internal SystemTimer Timer { get; private set; } = null;
         private BeatsTimer _beatsTimer = null;
-
-
         private int _currentBeatCount = 0;
         private int _lastBeatCount = -1;
         public float CurrentBeats => _currentBeats;
@@ -36,12 +34,14 @@ namespace Klrohias.NFast.PhiGamePlay
         private readonly ThreadDispatcher _dispatcher = new ThreadDispatcher();
         public readonly Queue<PhiNote> NewNotes = new();
 
+        private const float NOTE_DISTANCE = 10f;
+
         // audio
         private const float FINISH_LENGTH_OFFSET = 3000f; // unit: ms
         private float _musicLength = 0f; // unit: ms
 
         // events
-        private readonly UnorderedList<UnitEvent> _runningEvents = new UnorderedList<UnitEvent>();
+        private readonly UnorderedList<UnitEvent> _runningEvents = new();
         private IEnumerator<IList<UnitEvent>> _eventsGenerator;
 
         // unity resources
@@ -78,6 +78,7 @@ namespace Klrohias.NFast.PhiGamePlay
         internal readonly UnorderedList<PhiNote> JudgeNotes = new();
         private int _currentMaxJudgeBeats = 0;
         private const int JUDGE_FUTURE_BEATS = 4;
+
         public enum JudgeResult
         {
             Miss,
@@ -85,6 +86,7 @@ namespace Klrohias.NFast.PhiGamePlay
             Good,
             Perfect
         }
+
         private void Update()
         {
             if (GameRunning) GameTick();
@@ -148,6 +150,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 backgroundImage.SetPropertyBlock(block);
             }
         }
+
         private void InitPools()
         {
             _linePool = new(() =>
@@ -165,13 +168,18 @@ namespace Klrohias.NFast.PhiGamePlay
                 return obj;
             }, 5);
 
+            var inactiveLayer = LayerMask.NameToLayer("Inactive");
+            var defaultLayer = LayerMask.NameToLayer("Default");
             NotePool = new(() =>
             {
                 var obj = Instantiate(NotePrefab);
                 obj.name += " [Pooled]";
                 obj.GetComponent<PhiNoteWrapper>().Player = this;
                 return obj;
-            }, 5);
+            }, 0);
+            NotePool.SetActiveObjectOverride(obj => obj.layer = defaultLayer);
+            NotePool.SetInactiveObjectOverride(obj => obj.layer = inactiveLayer);
+            NotePool.WarmUp(5);
 
             HoldNotePool = new(() =>
             {
@@ -199,6 +207,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
                 UnitObjects.Add(obj);
             }
+
             for (int i = 0; i < Units.Count; i++)
             {
                 var item = Units[i];
@@ -211,10 +220,8 @@ namespace Klrohias.NFast.PhiGamePlay
             if (_notes.Length > 4096)
             {
                 ToastService.Get().Show(ToastService.ToastType.Success, "Warming up...");
-                await Tweener.Get().RunTween(5000f, (val) =>
-                {
-                    NotePool.WarmUp(Convert.ToInt32(val));
-                }, beginValue: 0f, endValue: MathF.Min(10240f, _notes.Length / 5f));
+                await Tweener.Get().RunTween(5000f, (val) => { NotePool.WarmUp(Convert.ToInt32(val)); }, beginValue: 0f,
+                    endValue: MathF.Min(10240f, _notes.Length / 5f));
             }
 
             // play animation
@@ -234,7 +241,8 @@ namespace Klrohias.NFast.PhiGamePlay
             _dispatcher.Dispatch(FetchNewEvents);
 
             GameRunning = true;
-            BgmAudioSource.PlayOneShot(_audioClip);
+            BgmAudioSource.clip = _audioClip;
+            BgmAudioSource.Play();
         }
 
         private GameObject CreateUnitObject(PhiUnit unit)
@@ -297,7 +305,7 @@ namespace Klrohias.NFast.PhiGamePlay
             _dispatcher.Dispatch(FetchNewEvents);
         }
 
-       
+
         private void DoUnitEvent(UnitEvent unitEvent, float beat)
         {
             var last = unitEvent.EndBeats - unitEvent.BeginBeats;
@@ -308,7 +316,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 , unitEvent.EasingFuncRange.Low,
                 unitEvent.EasingFuncRange.High);
             var value = unitEvent.BeginValue + (unitEvent.EndValue - unitEvent.BeginValue) * easingY;
-            var unitObj = UnitWrappers[(int)unitEvent.UnitId];
+            var unitObj = UnitWrappers[(int) unitEvent.UnitId];
 
             unitObj?.DoEvent(unitEvent.Type, value);
         }
@@ -325,22 +333,16 @@ namespace Klrohias.NFast.PhiGamePlay
                     i--;
                 }
 
-                // if (!item.isEventStarted)
-                // {
-                //     item.isEventStarted = true;
-                //     $"event u {item.UnitId} e {item.Type} bb {item.BeginBeats} bv {item.BeginValue} ev {item.EndValue} -> begin"
-                //         .Log();
-                // }
-
                 DoUnitEvent(item, _currentBeats);
             }
         }
 
         private void UpdateLineHeight()
         {
-            for (int i = 0; i < Units.Count; i++)
+            for (var i = 0; i < Units.Count; i++)
             {
                 var line = Units[i];
+                if (line.Type != PhiUnitType.Line) continue;
                 var newYPos = line.FindYPos(_currentBeats);
                 line.YPosition = newYPos;
             }
@@ -350,16 +352,18 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             lock (NewNotes)
             {
-                for (int i = 0; i < _notes.Length; i++)
+                for (var i = 0; i < _notes.Length; i++)
                 {
                     var note = _notes[i];
-                    var height = note.NoteHeight - Units[(int)note.UnitId].YPosition;
-                    if (height <= 25f && height >= 0)
-                    {
-                        NewNotes.Enqueue(note);
-                        _notes.RemoveAt(i);
-                        i--;
-                    }
+                    var height = note.NoteHeight - Units[(int) note.UnitId].YPosition;
+                    if (!note.WillDisplay) goto REMOVE_ITEM;
+
+
+                    if (height > NOTE_DISTANCE || height < 0) continue;
+                    NewNotes.Enqueue(note);
+                    REMOVE_ITEM:
+                    _notes.RemoveAt(i);
+                    i--;
                 }
             }
         }
@@ -379,12 +383,13 @@ namespace Klrohias.NFast.PhiGamePlay
             }
         }
 
-        
+
 
         public void OnNoteFinalize(PhiNoteWrapper note)
         {
             NotePool.ReturnObject(note.gameObject);
         }
+
         public void OnNoteFinalize(PhiHoldNoteWrapper note)
         {
             HoldNotePool.ReturnObject(note.gameObject);
@@ -399,6 +404,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 else eventsChunks[i] = _eventsGenerator.Current;
             }
         }
+
         private void GameTick()
         {
             if (Timer.Time > FINISH_LENGTH_OFFSET + _musicLength)
@@ -413,7 +419,7 @@ namespace Klrohias.NFast.PhiGamePlay
             {
                 _beatsTimer.ApplyNewBpm(_nextBpmEvent.Value, _nextBpmEvent.BeginBeats);
                 _nextBpmEvent = _bpmEventGenerator.MoveNext()
-                    ? (BpmEvent)_bpmEventGenerator.Current
+                    ? (BpmEvent) _bpmEventGenerator.Current
                     : null;
             }
 
@@ -435,16 +441,19 @@ namespace Klrohias.NFast.PhiGamePlay
             DoUnitEvents();
             _dispatcher.Dispatch(UpdateLineHeight);
             _dispatcher.Dispatch(FetchNewNotes);
-            ProcessNewNotes();
+            for (var i = 0; i < Units.Count; i++)
+            {
+                var line = Units[i];
+                if (line.Type != PhiUnitType.Line) continue;
+
+                var wrapper = (PhiLineWrapper) UnitWrappers[i];
+                wrapper.UpdateLineHeight(line.YPosition);
+            }
         }
 
         private void GameFinish()
         {
             NavigationService.Get().JumpScene("Scenes/PlayFinishScene");
-        }
-
-        private void ProcessNewNotes()
-        {
         }
     }
 }
