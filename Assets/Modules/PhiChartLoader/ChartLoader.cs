@@ -115,7 +115,6 @@ namespace Klrohias.NFast.PhiChartLoader
 
         public static async Task<string> ToNFastChart(string path,string cachePath, string outputPath)
         {
-            // TODO: custom output path, etc.
             var cacheOutput = Path.Combine(cachePath, NFAST_CHART);
 
             if (File.Exists(outputPath)) return outputPath;

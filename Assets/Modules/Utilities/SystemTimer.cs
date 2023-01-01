@@ -43,11 +43,8 @@ namespace Klrohias.NFast.Utilities
         private float startTime = 0f;
         private bool paused = false;
         private float pauseStart = 0;
-#if UNITY_EDITOR
-        public float Time => (rawTime - startTime - offset);
-#else
+        
         public float Time => rawTime - startTime - offset;
-#endif
         public void Reset()
         {
             startTime = rawTime;

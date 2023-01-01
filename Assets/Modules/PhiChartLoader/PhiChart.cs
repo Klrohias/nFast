@@ -16,7 +16,7 @@ namespace Klrohias.NFast.PhiChartLoader
         public PhiNote[] Notes { get; set; }
         public PhiUnit[] Units { get; set; }
         public UnitEvent[] UnitEvents { get; set; }
-        public List<BpmEvent> BpmEvents { get; set; }
+        public BpmEvent[] BpmEvents { get; set; }
         
         public IEnumerator<IList<UnitEvent>> GetOrderedEvents()
         {
@@ -113,7 +113,7 @@ namespace Klrohias.NFast.PhiChartLoader
 
             BpmEvent lastBpmEvent = null;
             var index = 0;
-            for (; index < BpmEvents.Count; index++)
+            for (; index < BpmEvents.Length; index++)
             {
                 var bpmEvent = BpmEvents[index];
                 if (lastBpmEvent == null)
@@ -334,8 +334,6 @@ namespace Klrohias.NFast.PhiChartLoader
         public EasingFunction EasingFunc { get; set; }
         public (float Low, float High) EasingFuncRange { get; set; }
         public uint UnitId { get; set; }
-
-        internal bool isEventStarted = false; // TODO: DEBUG USE!!
     }
 
     public static class ChartTimespan

@@ -15,6 +15,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private float _yOffset = 0f;
         public SpriteRenderer Renderer;
         public bool IsJudged { get; set; } = false;
+        private readonly static Vector2 NoteDefaultScale = Vector2.one * 2.5f;
         public void NoteStart(PhiNote note)
         {
             _isRunning = true;
@@ -46,6 +47,7 @@ namespace Klrohias.NFast.PhiGamePlay
             var newPosY = _note.NoteHeight - _unit.YPosition + _yOffset;
             localPos.y = newPosY;
             transform.localPosition = localPos;
+            transform.localScale = NoteDefaultScale;
         }
     }
 }

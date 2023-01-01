@@ -23,8 +23,6 @@ namespace Klrohias.NFast.PhiChartLoader
             var bpmEvents = BpmEvents.Select(x => x.ToNFastEvent())
                 .OrderBy(x => x.BeginBeats).ToList();
 
-            // TODO: decouple event converting
-
             // convert lines/notes
             var countOfNotes = JudgeLineList.Sum(x => x.Notes?.Count ?? 0);
             var notesArray = new PhiNote[countOfNotes];
@@ -66,7 +64,7 @@ namespace Klrohias.NFast.PhiChartLoader
                 Metadata = PezMetadata.ToNFastMetadata(),
                 Notes = notesArray,
                 Units = linesArray,
-                BpmEvents = bpmEvents,
+                BpmEvents = bpmEvents.ToArray(),
                 UnitEvents = eventsList.AsArray()
             };
             return chart;
