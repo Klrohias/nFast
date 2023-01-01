@@ -77,7 +77,7 @@ namespace Klrohias.NFast.UIControllers
             _homeListItemPool.ReturnAll();
 
             var chartPath = OSService.Get().ChartPath;
-            var files = Directory.GetFiles(chartPath, "*.nfp");
+            var files = Directory.GetFiles(chartPath);
             foreach (var file in files)
             {
                 var item = _homeListItemPool.RequestObject();

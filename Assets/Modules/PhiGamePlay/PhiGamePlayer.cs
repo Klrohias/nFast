@@ -210,7 +210,7 @@ namespace Klrohias.NFast.PhiGamePlay
             // warm up
             if (_notes.Length > 4096)
             {
-                ToastService.Get().Show(ToastService.ToastType.Success, "预热中...");
+                ToastService.Get().Show(ToastService.ToastType.Success, "Warming up...");
                 await Tweener.Get().RunTween(5000f, (val) =>
                 {
                     NotePool.WarmUp(Convert.ToInt32(val));
@@ -301,7 +301,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private void DoUnitEvent(UnitEvent unitEvent, float beat)
         {
             var last = unitEvent.EndBeats - unitEvent.BeginBeats;
-            var easingX = (beat - unitEvent.BeginBeats) / last;
+            var easingX = last == 0f ? 1f : (beat - unitEvent.BeginBeats) / last;
             easingX = Mathf.Clamp(easingX, 0, 1);
             var easingY = EasingFunctions.Invoke(
                 unitEvent.EasingFunc, easingX
@@ -309,6 +309,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 unitEvent.EasingFuncRange.High);
             var value = unitEvent.BeginValue + (unitEvent.EndValue - unitEvent.BeginValue) * easingY;
             var unitObj = UnitWrappers[(int)unitEvent.UnitId];
+
             unitObj?.DoEvent(unitEvent.Type, value);
         }
 
@@ -352,7 +353,7 @@ namespace Klrohias.NFast.PhiGamePlay
                 for (int i = 0; i < _notes.Length; i++)
                 {
                     var note = _notes[i];
-                    var height = note.NoteHeight - Units[(int)note.unitId].YPosition;
+                    var height = note.NoteHeight - Units[(int)note.UnitId].YPosition;
                     if (height <= 25f && height >= 0)
                     {
                         NewNotes.Enqueue(note);

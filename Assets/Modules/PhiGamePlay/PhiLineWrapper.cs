@@ -43,9 +43,8 @@ namespace Klrohias.NFast.PhiGamePlay
             _lastAlpha = val;
         }
 
-        public void DoEvent(UnitEventType type,float value)
+        public void DoEvent(UnitEventType type, float value)
         {
-
             switch (type)
             {
                 case UnitEventType.Alpha:

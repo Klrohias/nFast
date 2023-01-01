@@ -34,7 +34,6 @@ namespace Klrohias.NFast.Utilities
                 default:
                     throw new ArgumentOutOfRangeException(nameof(level), level, null);
             }
-            Debug.Log(content);
         }
         public static void Log(this object self)
         {

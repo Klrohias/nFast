@@ -58,7 +58,7 @@ namespace Klrohias.NFast.PhiChartLoader
                 {
                     foreach (var chartNote in Notes)
                     {
-                        chartNote.GenerateInternals(Units[chartNote.unitId], this);
+                        chartNote.GenerateInternals(Units[chartNote.UnitId], this);
                     }
                 }));
             }
@@ -80,7 +80,7 @@ namespace Klrohias.NFast.PhiChartLoader
                         for (int i = range.Item1; i < range.Item2; i++)
                         {
                             var note = Notes[i];
-                            var line = Units[note.unitId];
+                            var line = Units[note.UnitId];
                             note.GenerateInternals(line, this);
                         }
                     }));
@@ -180,7 +180,7 @@ namespace Klrohias.NFast.PhiChartLoader
         public float EndBeats { get; set; } = 0f;
         public float XPosition { get; set; } = 0f;
         public float YPosition { get; set; } = 0f; 
-        public uint unitId { get; set; } = 0;
+        public uint UnitId { get; set; } = 0;
         public bool ReverseDirection { get; set; } = false;
         public bool IsFakeNote { get; set; } = false;
 

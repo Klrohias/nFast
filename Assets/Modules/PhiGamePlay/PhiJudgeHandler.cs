@@ -81,7 +81,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private bool UpdateHoldNote(PhiNote note)
         {
-            var unitId = note.unitId;
+            var unitId = note.UnitId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];
@@ -169,7 +169,7 @@ namespace Klrohias.NFast.PhiGamePlay
         private void ProcessDragNote(PhiNote note)
         {
             if (note.JudgeTime > _currentTime) return;
-            var unitId = note.unitId;
+            var unitId = note.UnitId;
             for (var i = 0; i < _touchCount; i++)
             {
                 var touch = _touches[i];
@@ -183,7 +183,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessTapNote(PhiNote note)
         {
-            var unitId = note.unitId;
+            var unitId = note.UnitId;
             for (var i = 0; i < _touchCount; i++)
             {
                 var touch = _touches[i];
@@ -202,7 +202,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessFlickNote(PhiNote note)
         {
-            var unitId = note.unitId;
+            var unitId = note.UnitId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];
@@ -218,7 +218,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void ProcessHoldNote(PhiNote note)
         {
-            var unitId = note.unitId;
+            var unitId = note.UnitId;
             for (var j = 0; j < _touchCount; j++)
             {
                 var touch = _touches[j];

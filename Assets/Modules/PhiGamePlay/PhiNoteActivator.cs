@@ -40,7 +40,7 @@ namespace Klrohias.NFast.PhiGamePlay
                     note.Type == NoteType.Hold ? Player.HoldNotePool.RequestObject() 
                         : Player.NotePool.RequestObject();
 
-                var lineWrapper = _unitWrappers[(int) note.unitId];
+                var lineWrapper = _unitWrappers[(int) note.UnitId];
 
                 var typedWrapper = (PhiLineWrapper) lineWrapper;
                 noteObj.transform.parent = note.ReverseDirection
@@ -49,7 +49,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
                 var localPos = noteObj.transform.localPosition;
                 var noteYOffset = ScreenAdapter.ToGameYPos(note.YPosition);
-                localPos.y = note.NoteHeight - Player.Units[(int) note.unitId].YPosition + noteYOffset;
+                localPos.y = note.NoteHeight - Player.Units[(int) note.UnitId].YPosition + noteYOffset;
                 localPos.x = ScreenAdapter.ToGameXPos(note.XPosition);
                 noteObj.transform.localPosition = localPos;
 

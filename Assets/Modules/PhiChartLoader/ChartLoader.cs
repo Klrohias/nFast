@@ -24,6 +24,12 @@ namespace Klrohias.NFast.PhiChartLoader
         }
 
         private const string PEZ_INFO = "info.txt";
+        private static readonly Regex PezNameLocate = new Regex("Name:([^\\n]+)\\n");
+        private static readonly Regex PezSongLocate = new Regex("Song:([^\\n]+)\\n");
+        private static readonly Regex PezPictureLocate = new Regex("Picture:([^\\n]+)\\n");
+        private static readonly Regex PezLevelLocate = new Regex("Level:([^\\n]+)\\n");
+        private static readonly Regex PezComposerLocate = new Regex("Composer:([^\\n]+)\\n");
+        private static readonly Regex PezCharterLocate = new Regex("Charter:([^\\n]+)\\n");
         private static readonly Regex PezChartLocate = new Regex("Chart:([0-9a-zA-Z ._]+)");
         private static readonly Regex PezPathLocate = new Regex("Path:([0-9a-zA-Z ._]+)");
         private const string NFAST_CHART = "_CHART_";
@@ -34,7 +40,36 @@ namespace Klrohias.NFast.PhiChartLoader
             return locate[0].Groups[1].Value.Trim();
         }
 
-        private static async Task<LoadResult> LoadPezChart(LoadContext context)
+        private static async Task<PhiChart> ParseZippedChartPayload(Stream stream, bool isJsonChart)
+        {
+            if (isJsonChart)
+            {
+                // pez json
+                var chart = JsonConvert.DeserializeObject<PezChart>(
+                    await new StreamReader(stream).ReadToEndAsync());
+                return chart?.ToNFastChart();
+            }
+
+            // pec
+            var parser = new PecParser(stream);
+            await parser.ParsePhiChart();
+            var result = parser.Result;
+            return result;
+        }
+
+        private static ChartMetadata LoadMetadataFromInfo(string infoContent)
+        {
+            var result = new ChartMetadata();
+            result.Name = LocateRegExp(PezNameLocate, infoContent);
+            result.Charter = LocateRegExp(PezCharterLocate, infoContent);
+            result.Level = LocateRegExp(PezLevelLocate, infoContent);
+            result.Composer = LocateRegExp(PezComposerLocate, infoContent);
+            result.BackgroundFileName = LocateRegExp(PezPictureLocate, infoContent);
+            result.MusicFileName = LocateRegExp(PezSongLocate, infoContent);
+            return result;
+        }
+
+        private static async Task<LoadResult> LoadZippedChart(LoadContext context)
         {
             var result = new LoadResult();
             var zipFile = ZipFile.OpenRead(context.Path);
@@ -50,12 +85,15 @@ namespace Klrohias.NFast.PhiChartLoader
 
             // load chart
             var chartStream = await resourceProvider.GetStreamResource(chartPath);
-            var chart = JsonConvert.DeserializeObject<PezChart>(
-                await new StreamReader(chartStream).ReadToEndAsync());
+            var isJsonChart = chartStream.ReadByte() == '{'; 
+            chartStream.Close(); // DeflateStream does not support Seek
+            chartStream = await resourceProvider.GetStreamResource(chartPath);
+            var chart = await ParseZippedChartPayload(chartStream, isJsonChart);
+            if (chart.Metadata == null) chart.Metadata = LoadMetadataFromInfo(content);
             chartStream.Close();
 
             if (chart == null)
-                throw new NullReferenceException("Failed to load Pez chart");
+                throw new NullReferenceException("Failed to load Zipped chart");
 
             if (!string.IsNullOrWhiteSpace(context.CachePath))
             {
@@ -66,7 +104,7 @@ namespace Klrohias.NFast.PhiChartLoader
             }
 
             result.ResourceProvider = resourceProvider;
-            result.Chart = chart.ToNFastChart();
+            result.Chart = chart;
 
             return result;
         }
@@ -105,9 +143,9 @@ namespace Klrohias.NFast.PhiChartLoader
             // load by extension
             switch (ext)
             {
-                case ".pez": return LoadPezChart(ctx);
+                case ".pez": return LoadZippedChart(ctx);
                 case ".nfp": return LoadNFastChart(ctx);
-                case ".zip": return LoadPezChart(ctx);
+                case ".zip": return LoadZippedChart(ctx);
                 case ".pgm": return null; // in plan, not supported now
             }
             throw new ArgumentOutOfRangeException($"Unknown file type '{ext ?? "undefined"}");

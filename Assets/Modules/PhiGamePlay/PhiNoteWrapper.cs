@@ -20,7 +20,7 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             _isRunning = true;
             this._note = note;
-            this._unit = Player.Units[(int) note.unitId];
+            this._unit = Player.Units[(int) note.UnitId];
             this.IsJudged = false;
             this._yOffset = Player.ScreenAdapter.ToGameYPos(note.YPosition);
             Renderer.sprite = note.Type switch
@@ -36,7 +36,7 @@ namespace Klrohias.NFast.PhiGamePlay
         void Update()
         {
             if (!_isRunning) return;
-            if (Player.CurrentBeats >= _note.EndBeats + (!IsJudged ? (15f / _unit.Speed) : 0f))
+            if (Player.CurrentBeats >= _note.EndBeats)
             {
                 _isRunning = false;
                 Player.OnNoteFinalize(this);

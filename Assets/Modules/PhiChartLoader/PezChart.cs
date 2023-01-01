@@ -141,9 +141,9 @@ namespace Klrohias.NFast.PhiChartLoader
         [JsonProperty("startTime")]
         public List<int> StartTime { get; set; }
 
-        private EasingFunction ToNFastEasingFunction()
+        public static EasingFunction ToNFastEasingFunction(int easingType)
         {
-            switch (EasingType)
+            switch (easingType)
             {
                 case 1: return EasingFunction.Linear;
                 case 2: return EasingFunction.SineOut;
@@ -185,7 +185,7 @@ namespace Klrohias.NFast.PhiChartLoader
                 EasingFuncRange = (EasingLeft, EasingRight),
                 EndBeats = ChartTimespan.FromBeatsFraction(EndTime),
                 EndValue = End,
-                EasingFunc = ToNFastEasingFunction(),
+                EasingFunc = ToNFastEasingFunction(EasingType),
                 Type = type,
                 UnitId = unitId
             };
@@ -359,7 +359,7 @@ namespace Klrohias.NFast.PhiChartLoader
         {
             return new()
             {
-                unitId = unitId,
+                UnitId = unitId,
                 EndBeats = ChartTimespan.FromBeatsFraction(EndTime),
                 BeginBeats = ChartTimespan.FromBeatsFraction(StartTime),
                 XPosition = PositionX,
