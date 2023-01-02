@@ -68,8 +68,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Button
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 903dfd334f74d834fa0b2b396130a00f, type: 2}
-  m_sharedMaterial: {fileID: -962870057165905957, guid: 903dfd334f74d834fa0b2b396130a00f, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 58ea7c0c665e6424582814ffe1540f17, type: 2}
+  m_sharedMaterial: {fileID: 8465069705761353217, guid: 58ea7c0c665e6424582814ffe1540f17, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -169,7 +169,7 @@ RectTransform:
   m_Children:
   - {fileID: 8302273903674545191}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
