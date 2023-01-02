@@ -1,4 +1,5 @@
 using System;
+using Klrohias.NFast.Time;
 using Klrohias.NFast.Tween;
 using Klrohias.NFast.Utilities;
 using TMPro;
@@ -17,7 +18,7 @@ namespace Klrohias.NFast.UIControllers
         public Image SignImage;
         public TMP_Text ContentText;
         private bool _isOpened = false;
-        private SystemTimer _timer = new();
+        private IClock _timer = new SystemClock();
         private float _hideTime = float.PositiveInfinity;
         public enum ToastType
         {

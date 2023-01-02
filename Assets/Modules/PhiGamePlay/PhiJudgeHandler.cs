@@ -44,7 +44,7 @@ namespace Klrohias.NFast.PhiGamePlay
         {
             if (!Player.GameRunning) return;
 
-            _currentTime = Player.Timer.Time;
+            _currentTime = Player.Clock.Time;
             TryDeactivateEventSystem();
 
             // update touch detail

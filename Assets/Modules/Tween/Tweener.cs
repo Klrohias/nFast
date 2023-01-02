@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Klrohias.NFast.Time;
 using Klrohias.NFast.Utilities;
 using UnityEngine;
 
@@ -26,7 +27,7 @@ namespace Klrohias.NFast.Tween
         }
 
         private UnorderedList<Tween> _tweens = new();
-        public SystemTimer Timer { get; } = new SystemTimer();
+        public IClock Timer { get; } = new SystemClock();
 
         private void Awake()
         {

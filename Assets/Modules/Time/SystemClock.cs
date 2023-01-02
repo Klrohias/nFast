@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 
 
-namespace Klrohias.NFast.Utilities
+namespace Klrohias.NFast.Time
 {
-    public class SystemTimer
+    public class SystemClock : IClock
     {
         private float offset = 0f;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
@@ -32,36 +32,36 @@ namespace Klrohias.NFast.Utilities
             return counter;
         }
 
-        private float rawTime => (float)(queryCounter()) / freq * 1000f;
+        private float RawTime => (float)(queryCounter()) / freq * 1000f;
 #else
-        private float rawTime => UnityEngine.Time.fixedTime * 1000f;
+        private float RawTime => UnityEngine.Time.fixedTime * 1000f;
 #endif
 
 #else
-        private float rawTime => Convert.ToSingle(AudioSettings.dspTime);
+        private float RawTime => Convert.ToSingle(AudioSettings.dspTime);
 #endif
-        private float startTime = 0f;
-        private bool paused = false;
-        private float pauseStart = 0;
+        private float _startTime = 0f;
+        private bool _paused = false;
+        private float _pauseStart = 0;
         
-        public float Time => rawTime - startTime - offset;
+        public float Time => RawTime - _startTime - offset;
         public void Reset()
         {
-            startTime = rawTime;
+            _startTime = RawTime;
         }
         public void Pause()
         {
-            if (paused) throw new InvalidOperationException("Timer is already paused");
-            paused = true;
-            pauseStart = rawTime;
+            if (_paused) throw new InvalidOperationException("Clock is already paused");
+            _paused = true;
+            _pauseStart = RawTime;
         }
 
         public void Resume()
         {
-            if (!paused) throw new InvalidOperationException("Timer is not paused");
-            paused = false;
-            var pauseEnd = rawTime;
-            offset += pauseEnd - pauseStart;
+            if (!_paused) throw new InvalidOperationException("Clock is not paused");
+            _paused = false;
+            var pauseEnd = RawTime;
+            offset += pauseEnd - _pauseStart;
         }
     }
 }

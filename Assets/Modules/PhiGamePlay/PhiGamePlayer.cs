@@ -13,6 +13,7 @@ using UnityEngine;
 using Klrohias.NFast.Native;
 using Klrohias.NFast.UIComponent;
 using Klrohias.NFast.Resource;
+using Klrohias.NFast.Time;
 using Klrohias.NFast.Tween;
 using Klrohias.NFast.UIControllers;
 using Debug = UnityEngine.Debug;
@@ -23,8 +24,8 @@ namespace Klrohias.NFast.PhiGamePlay
     {
         // game running
         internal bool GameRunning { get; private set; } = false;
-        internal SystemTimer Timer { get; private set; } = null;
-        private BeatsTimer _beatsTimer = null;
+        internal IClock Clock { get; private set; } = null;
+        private BeatsClock _beatsClock = null;
         private int _currentBeatCount = 0;
         private int _lastBeatCount = -1;
         public float CurrentBeats => _currentBeats;
@@ -231,10 +232,10 @@ namespace Klrohias.NFast.PhiGamePlay
 
 
             // start timer / services / threads
-            Timer = new SystemTimer();
-            _beatsTimer = new BeatsTimer(Timer);
-            Timer.Reset();
-            _beatsTimer.Reset();
+            Clock = new DspClock();
+            _beatsClock = new BeatsClock(Clock);
+            Clock.Reset();
+            _beatsClock.Reset();
 
             _dispatcher.OnException += Debug.LogException;
             _dispatcher.Start();
@@ -407,7 +408,7 @@ namespace Klrohias.NFast.PhiGamePlay
 
         private void GameTick()
         {
-            if (Timer.Time > FINISH_LENGTH_OFFSET + _musicLength)
+            if (Clock.Time > FINISH_LENGTH_OFFSET + _musicLength)
             {
                 GameRunning = false;
                 GameFinish();
@@ -417,13 +418,13 @@ namespace Klrohias.NFast.PhiGamePlay
             // update beats
             if (_nextBpmEvent != null && _nextBpmEvent.BeginBeats <= _currentBeats)
             {
-                _beatsTimer.ApplyNewBpm(_nextBpmEvent.Value, _nextBpmEvent.BeginBeats);
+                _beatsClock.ApplyNewBpm(_nextBpmEvent.Value, _nextBpmEvent.BeginBeats);
                 _nextBpmEvent = _bpmEventGenerator.MoveNext()
                     ? (BpmEvent) _bpmEventGenerator.Current
                     : null;
             }
 
-            if (_beatsTimer.CurrentBpm != 0) _currentBeats = _beatsTimer.Beats;
+            if (_beatsClock.CurrentBpm != 0) _currentBeats = _beatsClock.Beats;
 
             // check beats
 

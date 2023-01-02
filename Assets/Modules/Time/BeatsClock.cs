@@ -1,8 +1,10 @@
-﻿namespace Klrohias.NFast.Utilities
+﻿using Klrohias.NFast.Utilities;
+
+namespace Klrohias.NFast.Time
 {
-    public class BeatsTimer
+    public class BeatsClock
     {
-        private SystemTimer _timerSource;
+        private IClock _timerSource;
         private float _offsetTime = 0f; // unit: ms
         
         private float _offsetBeats = 0f;
@@ -18,7 +20,6 @@
                 var result = _offsetBeats + (_timerSource.Time - _offsetTime) / _beatLasts;
                 if (result < _lastBeats)
                 {
-                    $"beats cannot keep up, difference {_lastBeats - result}".LogWarning();
                     return _lastBeats;
                 }
                 _lastBeats = result;
@@ -26,7 +27,7 @@
             }
         }
 
-        public BeatsTimer(SystemTimer timerSource)
+        public BeatsClock(IClock timerSource)
         {
             _timerSource = timerSource;
         }
