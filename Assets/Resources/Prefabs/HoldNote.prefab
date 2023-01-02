@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5592613672520645035}
   - component: {fileID: 6390819062629100119}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: HoldNote
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -60,7 +60,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5592613673040132622}
   - component: {fileID: 5592613673040132623}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -132,7 +132,7 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 1
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 1
+  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &5592613674083266456
 GameObject:
@@ -144,7 +144,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5592613674083266457}
   - component: {fileID: 5592613674083266150}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TopHead
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -216,7 +216,7 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 1
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 1
+  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &5592613674149971648
 GameObject:
@@ -228,7 +228,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5592613674149971649}
   - component: {fileID: 5592613674149971662}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: BottomHead
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -300,5 +300,5 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 1
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 1
+  m_MaskInteraction: 0
   m_SpriteSortPoint: 0

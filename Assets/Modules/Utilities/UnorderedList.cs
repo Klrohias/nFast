@@ -124,6 +124,8 @@ namespace Klrohias.NFast.Utilities
             return result;
         }
 
+        public T[] GetInternalCollection() => _items;
+
         public static UnorderedList<T> From(T[] array)
         {
             var length = array.Length;

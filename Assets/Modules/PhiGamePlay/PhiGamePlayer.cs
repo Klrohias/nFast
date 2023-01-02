@@ -170,7 +170,7 @@ namespace Klrohias.NFast.PhiGamePlay
             }, 5);
 
             var inactiveLayer = LayerMask.NameToLayer("Inactive");
-            var defaultLayer = LayerMask.NameToLayer("Default");
+            var defaultLayer = LayerMask.NameToLayer("PlayArea");
             NotePool = new(() =>
             {
                 var obj = Instantiate(NotePrefab);
