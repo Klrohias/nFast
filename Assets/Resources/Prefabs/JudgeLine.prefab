@@ -47,6 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38c1a06bcec69d54e86186adec69b657, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Player: {fileID: 0}
   LineBody: {fileID: 5396114160653278207}
   UpNoteViewport: {fileID: 6527045230313305363}
   DownNoteViewport: {fileID: 4090115681674688666}
@@ -194,5 +195,5 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
+  m_MaskInteraction: 1
   m_SpriteSortPoint: 0
