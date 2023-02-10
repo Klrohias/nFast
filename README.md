@@ -1,5 +1,6 @@
 # nFast
-![nfast](https://socialify.git.ci/klrohias/nfast/image?font=Source%20Code%20Pro&forks=1&issues=1&language=1&name=1&owner=1&pattern=Plus&pulls=1&stargazers=1&theme=Auto)  
+![nfast](https://socialify.git.ci/klrohias/nfast/image?font=Source%20Code%20Pro&forks=1&issues=1&language=1&name=1&owner=1&pattern=Plus&pulls=1&stargazers=1&theme=Auto) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FKlrohias%2FnFast.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FKlrohias%2FnFast?ref=badge_shield)
+ 
 
 [📦 下载](https://github.com/Klrohias/nFast/releases) | [📃 文档 (中文)](README.md) | [📃 Docs (English)](README.en.md)
 
@@ -15,3 +16,6 @@
 
 # 许可证
 [GPL 3.0](LICENSE)
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FKlrohias%2FnFast.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FKlrohias%2FnFast?ref=badge_large)
